@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>YuanYuan Voice Works — Daily Grind counter</title>
+<style>
+  :root{
+    --bg:#0f1113;
+    --panel:#171a1d;
+    --panel-2:#1e2226;
+    --line:#2a2f34;
+    --text:#eef1f4;
+    --muted:#9aa4ad;
+    --accent:#e8a13a;
+    --accent-soft:rgba(232,161,58,.14);
+    --low:#e2574c;
+    --low-soft:rgba(226,87,76,.13);
+    --ok:#4fb477;
+    --radius:14px;
+    --font:"Segoe UI",-apple-system,BlinkMacSystemFont,"Helvetica Neue",system-ui,"Noto Sans TC",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:var(--font);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 22px 120px}
+
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:26px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .mark{
+    width:38px;height:38px;border-radius:11px;flex:none;
+    background:linear-gradient(150deg,var(--accent),#c9761f);
+    display:grid;place-items:center;font-weight:700;color:#241503;font-size:15px;
+  }
+  h1{font-size:17px;margin:0;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12.5px;margin-top:3px}
+
+  .status{
+    display:flex;align-items:center;gap:9px;
+    background:var(--panel);border:1px solid var(--line);
+    padding:8px 14px;border-radius:999px;font-size:12.5px;color:var(--muted);
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:#555c63;flex:none;transition:background .2s}
+  .dot.live{background:var(--ok);box-shadow:0 0 0 4px rgba(79,180,119,.16)}
+  .dot.connecting{background:var(--accent);animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+
+  .shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px}
+  .item{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 17px;position:relative;overflow:hidden;
+    transition:border-color .25s,background .25s,transform .25s;
+  }
+  .item.low{border-color:rgba(226,87,76,.45);background:linear-gradient(var(--low-soft),var(--low-soft)),var(--panel)}
+  .item.flash{animation:flash .7s ease-out}
+  @keyframes flash{
+    0%{transform:scale(1.03);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+    100%{transform:scale(1);box-shadow:none}
+  }
+  .item .zh{font-size:15px;font-weight:600}
+  .item .en{color:var(--muted);font-size:12px;margin-top:2px}
+  .qty{display:flex;align-items:baseline;gap:7px;margin-top:14px}
+  .qty b{font-size:34px;font-weight:650;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+  .qty span{color:var(--muted);font-size:12.5px}
+  .par{margin-top:9px;font-size:11.5px;color:var(--muted)}
+  .badge{
+    position:absolute;top:14px;right:14px;
+    background:var(--low);color:#fff;font-size:10px;font-weight:700;
+    letter-spacing:.6px;padding:3px 8px;border-radius:999px;
+  }
+
+  .feed{
+    margin-top:26px;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:6px 0;min-height:88px;max-height:260px;overflow-y:auto;
+  }
+  .feed:empty::after{
+    content:"Say something like 「燕麥奶 開兩瓶」";
+    display:block;padding:28px 20px;text-align:center;color:var(--muted);font-size:13px;
+  }
+  .line{padding:9px 20px;font-size:13.5px;line-height:1.5;display:flex;gap:11px;align-items:flex-start}
+  .line .who{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.6px;color:var(--muted);padding-top:3px;width:44px}
+  .line.you .who{color:var(--accent)}
+  .line.partial{opacity:.5}
+  .line.act{color:var(--ok);font-size:12.5px}
+
+  .bar{
+    position:fixed;left:0;right:0;bottom:0;
+    background:linear-gradient(transparent,var(--bg) 24%);
+    padding:26px 22px 24px;display:flex;justify-content:center;
+  }
+  button.mic{
+    display:flex;align-items:center;gap:11px;
+    background:var(--accent);color:#1c1204;border:0;
+    font-family:var(--font);font-size:15px;font-weight:650;
+    padding:15px 30px;border-radius:999px;cursor:pointer;
+    transition:transform .15s,box-shadow .2s,background .2s;
+    box-shadow:0 8px 26px rgba(232,161,58,.24);
+  }
+  button.mic:hover{transform:translateY(-1px)}
+  button.mic:disabled{opacity:.55;cursor:default;transform:none}
+  button.mic.on{background:var(--low);color:#fff;box-shadow:0 8px 26px rgba(226,87,76,.26)}
+  button.mic svg{width:17px;height:17px}
+
+  .err{
+    margin-top:16px;padding:12px 15px;border-radius:10px;font-size:13px;
+    background:var(--low-soft);border:1px solid rgba(226,87,76,.4);color:#ffb3ad;
+  }
+  .err:empty{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="mark">YV</div>
+      <div>
+        <h1>Daily Grind &mdash; counter stock</h1>
+        <div class="sub">YuanYuan Voice Works &middot; speak, and the stock updates</div>
+      </div>
+    </div>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">Not connected</span></div>
+  </header>
+
+  <div class="shelf" id="shelf"></div>
+  <div class="err" id="err"></div>
+  <div class="feed" id="feed"></div>
+
+</div>
+
+<div class="bar">
+  <button class="mic" id="micBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/>
+    </svg>
+    <span id="micLabel">Start talking</span>
+  </button>
+</div>
+
+<script>
+/* ---------------------------------------------------------------
+   YuanYuan Voice Works
+   A voice inventory assistant for a chain cafe counter.
+   One WebSocket to AssemblyAI's Voice Agent API carries speech in,
+   speech out, and the tool calls that move the stock.
+   --------------------------------------------------------------- */
+
+const AGENT_WS = "wss://agents.assemblyai.com/v1/ws";
+const TOKEN_ENDPOINT = "/api/voice-token";
+const SAMPLE_RATE = 24000;          // the Voice Agent API speaks PCM16 @ 24 kHz
+const CHUNK_MS = 50;
+
+/* ---- the shelf ------------------------------------------------ */
+
+const DEFAULT_STOCK = [
+  { id:"oat_milk",       zh:"燕麥奶",     en:"Oat milk",       unit:"1L bottles",  qty:12, par:6 },
+  { id:"whole_milk",     zh:"鮮奶",       en:"Whole milk",     unit:"2L bottles",  qty:20, par:8 },
+  { id:"vanilla_syrup",  zh:"香草糖漿",   en:"Vanilla syrup",  unit:"750ml bottles", qty:3,  par:6 },
+  { id:"espresso_beans", zh:"濃縮豆",     en:"Espresso beans", unit:"1kg bags",    qty:8,  par:4 },
+  { id:"cups_16oz",      zh:"16 盎司杯",  en:"16oz cups",      unit:"sleeves",     qty:6,  par:4 },
+  { id:"sealing_film",   zh:"封膜",       en:"Sealing film",   unit:"rolls",       qty:4,  par:2 },
+];
+
+const STORE_KEY = "yvw.stock.v1";
+
+function loadStock(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      const saved = JSON.parse(raw);
+      return DEFAULT_STOCK.map(d => ({ ...d, qty: saved[d.id] ?? d.qty }));
+    }
+  }catch(e){ /* private mode, blocked storage — fall through to defaults */ }
+  return DEFAULT_STOCK.map(d => ({ ...d }));
+}
+
+function saveStock(){
+  try{
+    const out = {};
+    stock.forEach(i => out[i.id] = i.qty);
+    localStorage.setItem(STORE_KEY, JSON.stringify(out));
+  }catch(e){ /* nothing to do — the screen is still correct */ }
+}
+
+let stock = loadStock();
+
+/* ---- rendering ------------------------------------------------ */
+
+const shelfEl  = document.getElementById("shelf");
+const feedEl   = document.getElementById("feed");
+const errEl    = document.getElementById("err");
+const dotEl    = document.getElementById("dot");
+const statusEl = document.getElementById("statusText");
+const micBtn   = document.getElementById("micBtn");
+const micLabel = document.getElementById("micLabel");
+
+function renderShelf(){
+  shelfEl.innerHTML = stock.map(i => `
+    <div class="item ${i.qty <= i.par ? "low" : ""}" data-id="${i.id}">
+      ${i.qty <= i.par ? '<span class="badge">LOW</span>' : ""}
+      <div class="zh">${i.zh}</div>
+      <div class="en">${i.en}</div>
+      <div class="qty"><b>${i.qty}</b><span>${i.unit}</span></div>
+      <div class="par">par ${i.par}</div>
+    </div>`).join("");
+}
+
+function flash(id){
+  const el = shelfEl.querySelector(`[data-id="${id}"]`);
+  if(!el) return;
+  el.classList.remove("flash");
+  void el.offsetWidth;
+  el.classList.add("flash");
+}
+
+function say(who, text, cls){
+  const div = document.createElement("div");
+  div.className = "line " + (cls || "");
+  div.innerHTML = `<span class="who">${who}</span><span class="txt"></span>`;
+  div.querySelector(".txt").textContent = text;
+  feedEl.appendChild(div);
+  feedEl.scrollTop = feedEl.scrollHeight;
+  return div;
+}
+
+let partialLine = null;
+function showPartial(text){
+  if(!partialLine) partialLine = say("YOU", text, "you partial");
+  else partialLine.querySelector(".txt").textContent = text;
+  feedEl.scrollTop = feedEl.scrollHeight;
+}
+function commitPartial(text){
+  if(partialLine){
+    partialLine.classList.remove("partial");
+    partialLine.querySelector(".txt").textContent = text;
+    partialLine = null;
+  } else {
+    say("YOU", text, "you");
+  }
+}
+
+function setStatus(text, state){
+  statusEl.textContent = text;
+  dotEl.className = "dot" + (state ? " " + state : "");
+}
+function showError(msg){ errEl.textContent = msg; }
+
+renderShelf();
+
+/* ---- the three things it can do ------------------------------- */
+
+function findItem(name){
+  if(!name) return null;
+  const q = String(name).toLowerCase().trim();
+  return stock.find(i =>
+    i.id === q ||
+    i.zh === name ||
+    i.en.toLowerCase() === q ||
+    i.en.toLowerCase().includes(q) ||
+    i.zh.includes(name)
+  ) || null;
+}
+
+function stockReport(i){
+  return {
+    item: i.en, quantity: i.qty, unit: i.unit,
+    par_level: i.par, below_par: i.qty <= i.par
+  };
+}
+
+const TOOLS = {
+  deduct_stock({ item, quantity }){
+    const it = findItem(item);
+    if(!it) return { error: `No item called "${item}" on this shelf.` };
+    const n = Math.abs(Number(quantity) || 0);
+    if(!n) return { error: "Quantity missing." };
+    if(n > it.qty) return { error:`Only ${it.qty} ${it.unit} of ${it.en} left — cannot take ${n}.`, ...stockReport(it) };
+    it.qty -= n;
+    afterChange(it);
+    say("STOCK", `− ${n} ${it.en} → ${it.qty} left`, "act");
+    return stockReport(it);
+  },
+  add_stock({ item, quantity }){
+    const it = findItem(item);
+    if(!it) return { error: `No item called "${item}" on this shelf.` };
+    const n = Math.abs(Number(quantity) || 0);
+    if(!n) return { error: "Quantity missing." };
+    it.qty += n;
+    afterChange(it);
+    say("STOCK", `+ ${n} ${it.en} → ${it.qty} on hand`, "act");
+    return stockReport(it);
+  },
+  check_stock({ item }){
+    const it = findItem(item);
+    if(!it) return { error: `No item called "${item}" on this shelf.` };
+    return stockReport(it);
+  }
+};
+
+function afterChange(it){
+  saveStock();
+  renderShelf();
+  flash(it.id);
+}
+
+const TOOL_SCHEMA = [
+  {
+    type:"function",
+    name:"deduct_stock",
+    description:"Take stock off the shelf when the barista opens, uses or throws away an item.",
+    parameters:{
+      type:"object",
+      properties:{
+        item:{ type:"string", description:"Item name, in Mandarin or English, e.g. 燕麥奶 or oat milk" },
+        quantity:{ type:"number", description:"How many units to remove" }
+      },
+      required:["item","quantity"]
+    }
+  },
+  {
+    type:"function",
+    name:"add_stock",
+    description:"Add stock when a delivery arrives or the barista restocks the counter.",
+    parameters:{
+      type:"object",
+      properties:{
+        item:{ type:"string", description:"Item name, in Mandarin or English" },
+        quantity:{ type:"number", description:"How many units arrived" }
+      },
+      required:["item","quantity"]
+    }
+  },
+  {
+    type:"function",
+    name:"check_stock",
+    description:"Look up how much of one item is on hand right now, and whether it is below par.",
+    parameters:{
+      type:"object",
+      properties:{
+        item:{ type:"string", description:"Item name, in Mandarin or English" }
+      },
+      required:["item"]
+    }
+  }
+];
+
+const SYSTEM_PROMPT = `You are the stock assistant at the counter of a Daily Grind cafe.
+The barista talks to you in Mandarin while their hands are busy; you always answer in English, briefly.
+
+Rules:
+- Keep every reply under 15 words. The barista is mid-service.
+- When they say they used, opened or wasted something, call deduct_stock.
+- When a delivery arrives or they restock, call add_stock.
+- When they ask how much is left, call check_stock.
+- After a tool runs, state the new number out loud, e.g. "Two oat milk out, ten left."
+- If below_par is true, add a short warning, e.g. "That's below par, worth reordering."
+- If you did not clearly hear the item or the number, do NOT guess. Ask one short question:
+  "Two bottles or twelve?" Confirm before you change anything.
+- Never invent items. The shelf holds only: oat milk, whole milk, vanilla syrup,
+  espresso beans, 16oz cups, sealing film.`;
+
+const KEYTERMS = [
+  "燕麥奶","鮮奶","香草糖漿","濃縮豆","封膜","盎司杯","開兩瓶","進貨","還剩幾瓶",
+  "oat milk","whole milk","vanilla syrup","espresso beans","sealing film","16oz cups",
+  "Daily Grind","par level"
+];
+
+/* ---- the voice session ---------------------------------------- */
+
+let ws = null, audioCtx = null, micStream = null, workletNode = null, sourceNode = null;
+let playCtx = null, playHead = 0;
+let running = false;
+
+async function start(){
+  showError("");
+  setStatus("Connecting…", "connecting");
+  micBtn.disabled = true;
+
+  let token;
+  try{
+    const res = await fetch(TOKEN_ENDPOINT);
+    if(!res.ok) throw new Error(`token endpoint returned ${res.status}`);
+    ({ token } = await res.json());
+    if(!token) throw new Error("token endpoint returned no token");
+  }catch(e){
+    micBtn.disabled = false;
+    setStatus("Not connected");
+    showError(`Could not get a session token — ${e.message}. Is ASSEMBLYAI_API_KEY set on the deployment?`);
+    return;
+  }
+
+  try{
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio:{ echoCancellation:true, noiseSuppression:false, autoGainControl:true }
+    });
+  }catch(e){
+    micBtn.disabled = false;
+    setStatus("Not connected");
+    showError("Microphone permission denied — the browser needs it to hear you.");
+    return;
+  }
+
+  const url = new URL(AGENT_WS);
+  url.searchParams.set("token", token);
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({
+      type:"session.update",
+      session:{
+        system_prompt: SYSTEM_PROMPT,
+        greeting: "Counter stock is up. What did you use?",
+        input:{
+          format:{ encoding:"audio/pcm" },
+          keyterms: KEYTERMS,
+          turn_detection:{ vad_threshold:0.5, min_silence:400, max_silence:1200, interrupt_response:true }
+        },
+        output:{ voice:"anna", format:{ encoding:"audio/pcm" } },
+        tools: TOOL_SCHEMA
+      }
+    }));
+  };
+
+  ws.onmessage = async (raw) => {
+    let ev;
+    try{ ev = JSON.parse(raw.data); }catch(e){ return; }
+
+    switch(ev.type){
+      case "session.ready":
+        running = true;
+        micBtn.disabled = false;
+        micBtn.classList.add("on");
+        micLabel.textContent = "Stop";
+        setStatus("Listening", "live");
+        await openMic();
+        break;
+
+      case "transcript.user.delta":
+        showPartial(ev.text || "");
+        break;
+
+      case "transcript.user":
+        commitPartial(ev.text || "");
+        break;
+
+      case "transcript.agent":
+        say("AGENT", ev.text || "");
+        break;
+
+      case "reply.audio":
+        playChunk(ev.data);
+        break;
+
+      case "reply.done":
+        if(ev.status === "interrupted") stopPlayback();
+        break;
+
+      case "tool.call": {
+        const fn = TOOLS[ev.name];
+        let result;
+        if(!fn){
+          result = { error:`Unknown tool ${ev.name}` };
+        } else {
+          let args = {};
+          try{ args = typeof ev.arguments === "string" ? JSON.parse(ev.arguments) : (ev.arguments || {}); }
+          catch(e){ args = {}; }
+          try{ result = fn(args); }catch(e){ result = { error:String(e && e.message || e) }; }
+        }
+        ws.send(JSON.stringify({
+          type:"tool.result",
+          call_id: ev.call_id,
+          result: JSON.stringify(result)
+        }));
+        break;
+      }
+
+      case "session.error":
+        showError(`${ev.code || "error"}: ${ev.message || "unknown"}${ev.param ? " (" + ev.param + ")" : ""}`);
+        break;
+
+      case "session.ended":
+        stop();
+        break;
+    }
+  };
+
+  ws.onerror = () => showError("The voice connection dropped. Press start to try again.");
+  ws.onclose  = () => { if(running) stop(); };
+}
+
+async function openMic(){
+  audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
+  if(audioCtx.state === "suspended") await audioCtx.resume();
+
+  // The worklet lives in a Blob so this whole app stays one file.
+  const workletSrc = `
+    class Pump extends AudioWorkletProcessor{
+      constructor(){ super(); this.buf = []; this.need = ${Math.round(SAMPLE_RATE * CHUNK_MS / 1000)}; }
+      process(inputs){
+        const ch = inputs[0] && inputs[0][0];
+        if(ch){
+          this.buf.push(...ch);
+          while(this.buf.length >= this.need){
+            const slice = this.buf.splice(0, this.need);
+            const pcm = new Int16Array(slice.length);
+            for(let i=0;i<slice.length;i++){
+              const s = Math.max(-1, Math.min(1, slice[i]));
+              pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+            this.port.postMessage(pcm.buffer, [pcm.buffer]);
+          }
+        }
+        return true;
+      }
+    }
+    registerProcessor('pump', Pump);`;
+  const blobUrl = URL.createObjectURL(new Blob([workletSrc], { type:"application/javascript" }));
+  await audioCtx.audioWorklet.addModule(blobUrl);
+  URL.revokeObjectURL(blobUrl);
+
+  sourceNode  = audioCtx.createMediaStreamSource(micStream);
+  workletNode = new AudioWorkletNode(audioCtx, "pump");
+  workletNode.port.onmessage = (e) => {
+    if(!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(e.data) }));
+  };
+  sourceNode.connect(workletNode);
+  // Not connected to the destination — we never want the mic echoed back.
+}
+
+function toBase64(arrayBuffer){
+  const bytes = new Uint8Array(arrayBuffer);
+  let s = "";
+  const step = 0x8000;
+  for(let i = 0; i < bytes.length; i += step){
+    s += String.fromCharCode.apply(null, bytes.subarray(i, i + step));
+  }
+  return btoa(s);
+}
+
+/* ---- playback -------------------------------------------------
+   Agent audio is written straight into the AudioContext timeline.
+   Sleep-based scheduling drifts and clicks; a running playhead does not.
+   --------------------------------------------------------------- */
+
+function playChunk(b64){
+  if(!b64) return;
+  if(!playCtx){
+    playCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
+    playHead = playCtx.currentTime;
+  }
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  const pcm = new Int16Array(bytes.buffer);
+
+  const buf = playCtx.createBuffer(1, pcm.length, SAMPLE_RATE);
+  const ch = buf.getChannelData(0);
+  for(let i=0;i<pcm.length;i++) ch[i] = pcm[i] / 32768;
+
+  const src = playCtx.createBufferSource();
+  src.buffer = buf;
+  src.connect(playCtx.destination);
+
+  const now = playCtx.currentTime;
+  if(playHead < now) playHead = now + 0.02;
+  src.start(playHead);
+  playHead += buf.duration;
+}
+
+function stopPlayback(){
+  if(!playCtx) return;
+  playCtx.close();
+  playCtx = null;
+  playHead = 0;
+}
+
+/* ---- teardown -------------------------------------------------
+   An abandoned session keeps billing until the cap, so always end it.
+   --------------------------------------------------------------- */
+
+function stop(){
+  running = false;
+  try{ if(ws && ws.readyState === WebSocket.OPEN){ ws.send(JSON.stringify({ type:"session.end" })); ws.close(); } }catch(e){}
+  ws = null;
+  try{ workletNode && workletNode.disconnect(); }catch(e){}
+  try{ sourceNode && sourceNode.disconnect(); }catch(e){}
+  try{ micStream && micStream.getTracks().forEach(t => t.stop()); }catch(e){}
+  try{ audioCtx && audioCtx.close(); }catch(e){}
+  workletNode = sourceNode = micStream = audioCtx = null;
+  stopPlayback();
+
+  micBtn.disabled = false;
+  micBtn.classList.remove("on");
+  micLabel.textContent = "Start talking";
+  setStatus("Not connected");
+}
+
+micBtn.addEventListener("click", () => running ? stop() : start());
+window.addEventListener("beforeunload", () => { if(running) stop(); });
+</script>
+</body>
+</html>
