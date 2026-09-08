@@ -243,6 +243,23 @@ function commitPartial(text){
   }
 }
 
+let agentLine = null, agentBuf = "";
+function showAgentPartial(text){
+  if(!agentLine) agentLine = say("AGENT", text, "partial");
+  else agentLine.querySelector(".txt").textContent = text;
+  feedEl.scrollTop = feedEl.scrollHeight;
+}
+function commitAgent(text){
+  if(agentLine){
+    agentLine.classList.remove("partial");
+    agentLine.querySelector(".txt").textContent = text;
+    agentLine = null;
+  } else if(text){
+    say("AGENT", text);
+  }
+  agentBuf = "";
+}
+
 function setStatus(text, state){
   statusEl.textContent = text;
   dotEl.className = "dot" + (state ? " " + state : "");
@@ -447,8 +464,17 @@ async function start(){
         commitPartial(ev.text || "");
         break;
 
+      // Undocumented but real: the agent's line streams in word by word.
+      case "transcript.agent.delta": {
+        const d = ev.text || "";
+        // Some turns send the whole line each time, others only the new piece.
+        agentBuf = (agentBuf && d.startsWith(agentBuf)) ? d : agentBuf + d;
+        showAgentPartial(agentBuf);
+        break;
+      }
+
       case "transcript.agent":
-        say("AGENT", ev.text || "");
+        commitAgent(ev.text || "");
         break;
 
       case "reply.audio":
@@ -456,6 +482,7 @@ async function start(){
         break;
 
       case "reply.done":
+        if(agentLine) commitAgent(agentBuf);
         if(ev.status === "interrupted") stopPlayback();
         break;
 
@@ -593,6 +620,8 @@ function stop(){
   try{ audioCtx && audioCtx.close(); }catch(e){}
   workletNode = sourceNode = micStream = audioCtx = null;
   stopPlayback();
+  partialLine = agentLine = null;
+  agentBuf = "";
 
   micBtn.disabled = false;
   micBtn.classList.remove("on");
