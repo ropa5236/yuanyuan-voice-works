@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <!-- Chinese browsers auto-translate the recipe text and mangle it. Judges must see the original. -->
 <meta name="google" content="notranslate" />
-<title>圓圓 YuanYuan AI — a voice that cooks with you</title>
+<title>圓圓 YuanYuan AI — a voice that cooks with you 陪你煮飯的聲音</title>
 <style>
   :root{
     --bg:#141110;
@@ -75,7 +75,8 @@
 
   /* --- the live step --- */
   .stepnum{color:var(--accent);font-size:11.5px;font-weight:700;letter-spacing:1px}
-  .steptext{font-size:23px;line-height:1.42;margin-top:10px;font-weight:500}
+  .steptext{font-size:22px;line-height:1.42;margin-top:10px;font-weight:500}
+  .stepzh{font-size:17.5px;line-height:1.55;margin-top:9px;color:#d8c6ae;font-weight:500}
   .dishname{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:15px;border-bottom:1px solid var(--line)}
   .dishname .zh{font-size:17px;font-weight:650}
   .dishname .en{color:var(--muted);font-size:13px}
@@ -96,6 +97,7 @@
     font-size:15px;font-weight:650;font-variant-numeric:tabular-nums;
   }
   .timer .label{font-size:13.5px;color:var(--muted);line-height:1.5}
+  .timer .label .zh{display:block;color:#c9b9a6;font-size:13px;margin-top:2px}
   .timer .label b{display:block;color:var(--sage);font-size:12px;letter-spacing:.6px;text-transform:uppercase;margin-bottom:3px}
   .timer.rang .ring .fgc{stroke:var(--accent)}
   .timer.rang .label b{color:var(--accent)}
@@ -107,6 +109,8 @@
     padding:6px 12px;font-size:12.5px;
   }
   .ing span i{font-style:normal;color:var(--muted);margin-left:5px;font-size:11.5px}
+  .card h2 em{font-style:normal;color:var(--muted);opacity:.8;margin-left:7px;letter-spacing:0}
+  .zhtag{color:var(--muted);font-weight:400}
 
   .steps{list-style:none;margin:0;padding:0}
   .steps li{
@@ -114,6 +118,8 @@
     color:var(--muted);border-bottom:1px solid rgba(51,44,40,.6);
   }
   .steps li:last-child{border-bottom:0}
+  .steps li .zh{display:block;margin-top:3px;color:#a8968a}
+  .steps li.now .zh{color:#d8c6ae}
   .steps li .n{
     flex:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);
     display:grid;place-items:center;font-size:10.5px;margin-top:1px;
@@ -129,7 +135,7 @@
     border-radius:var(--radius);padding:6px 0;min-height:84px;max-height:230px;overflow-y:auto;
   }
   .feed:empty::after{
-    content:"Press the button, then just talk — try 「我想煮泡麵升級版」";
+    content:"Press the button, then just talk — 按下按鈕，直接開口說「我想煮泡麵升級版」";
     display:block;padding:27px 20px;text-align:center;color:var(--muted);font-size:13px;
   }
   .line{padding:9px 20px;font-size:13.5px;line-height:1.5;display:flex;gap:11px;align-items:flex-start}
@@ -137,6 +143,8 @@
   .line.you .who{color:var(--accent)}
   .line.partial{opacity:.5}
   .line.act{color:var(--sage);font-size:12.5px}
+  .line .zh{display:block;margin-top:4px;font-size:13px;color:#c9b9a6;line-height:1.5}
+  .line.you .zh{display:none}
 
   .err{
     margin-top:14px;padding:12px 15px;border-radius:10px;font-size:13px;
@@ -181,26 +189,26 @@
       <div class="mark">🍜</div>
       <div>
         <h1>YuanYuan AI &mdash; cook along with me</h1>
-        <div class="sub"><span class="zhname">圓圓</span> &middot; your hands are wet, and cooking alone is boring</div>
+        <div class="sub"><span class="zhname">圓圓</span> &middot; your hands are wet, and cooking alone is boring &middot; 手是濕的，而且一個人煮飯很無聊</div>
       </div>
     </div>
     <div class="headright">
-      <div class="stage" id="stage"><span>Stage</span><b id="stageText">idle</b></div>
-      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Not connected</span></div>
+      <div class="stage" id="stage"><span>Stage 階段</span><b id="stageText">idle</b></div>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Not connected 未連線</span></div>
     </div>
   </header>
 
   <div class="grid">
     <div>
       <div class="card" id="stageCard">
-        <h2 id="stageCardTitle">Tonight</h2>
+        <h2 id="stageCardTitle">Tonight <em>今晚</em></h2>
         <div id="live"></div>
         <div class="timer" id="timer">
           <div class="ring">
             <svg width="74" height="74"><circle class="bgc" cx="37" cy="37" r="32"></circle><circle class="fgc" id="ringFg" cx="37" cy="37" r="32"></circle></svg>
             <div class="num" id="ringNum">0:00</div>
           </div>
-          <div class="label"><b id="timerState">Waiting</b><span id="timerLabel"></span></div>
+          <div class="label"><b id="timerState">Waiting 等待中</b><span id="timerLabel"></span><span class="zh" id="timerLabelZh"></span></div>
         </div>
       </div>
       <div class="err" id="err"></div>
@@ -208,7 +216,7 @@
     </div>
 
     <div class="card" id="side">
-      <h2>Recipe book</h2>
+      <h2>Recipe book <em>食譜書</em></h2>
       <div id="sideBody"></div>
     </div>
   </div>
@@ -221,19 +229,20 @@
       <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
       <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/>
     </svg>
-    <span id="micLabel">Start talking</span>
+    <span id="micLabel">Start talking 開始說話</span>
   </button>
   <div class="settings" id="settings">
-    <label>Replies in
+    <label>Voice replies in 語音回答
       <select id="langSel">
-        <option value="en">English</option>
+        <option value="en">English 英文</option>
         <option value="zh">繁體中文</option>
       </select>
     </label>
     <label title="Experimental: lets the agent speak first when a timer ends. Verify against the API before filming.">
       <input type="checkbox" id="nudgeChk" />
-      Speak first when a timer ends <span style="opacity:.6">(experimental)</span>
+      Speak first when a timer ends 計時結束時主動開口 <span style="opacity:.6">(experimental 實驗中)</span>
     </label>
+    <span style="opacity:.6">Screen is always bilingual 畫面一律中英對照</span>
   </div>
 </div>
 
@@ -265,21 +274,32 @@ const RECIPES = [
     zh:"泡麵升級版", en:"Upgraded Instant Noodles",
     minutes:12,
     blurb:"The one you already know, made worth sitting down for.",
+    blurbZh:"你早就會的那碗，煮到值得坐下來好好吃。",
     keys:["泡麵","麵","雞蛋","蛋","青菜","蔥","辣油","noodle","noodles","egg","greens","scallion","instant"],
     ingredients:[
-      { zh:"泡麵",   en:"1 pack instant noodles" },
-      { zh:"雞蛋",   en:"1 egg" },
-      { zh:"青菜",   en:"A handful of leafy greens" },
-      { zh:"蔥花",   en:"Chopped scallion" },
-      { zh:"辣油",   en:"A spoon of chilli crisp" }
+      { zh:"泡麵 1 包",   en:"1 pack instant noodles" },
+      { zh:"雞蛋 1 顆",   en:"1 egg" },
+      { zh:"青菜 一把",   en:"A handful of leafy greens" },
+      { zh:"蔥花 適量",   en:"Chopped scallion" },
+      { zh:"辣油 一匙",   en:"A spoon of chilli crisp" }
     ],
     steps:[
-      { text:"Pour 500ml of water into a small pot, lid on, high heat.", wait:180, label:"Water coming to a boil" },
-      { text:"Water's up. Drop the noodle block in and leave it alone — no seasoning yet.", wait:90, label:"Noodles softening" },
-      { text:"Crack the egg straight onto the noodles. Don't stir it, let it set.", wait:60, label:"Egg setting" },
-      { text:"Now the sachets — but only half the oil packet. Trust me on that one." },
-      { text:"Greens in, then kill the heat. They'll cook in the heat that's left.", wait:30, label:"Greens wilting" },
-      { text:"Into a bowl. Scallion on top, a spoon of chilli crisp. That's dinner." }
+      { text:"Pour 500ml of water into a small pot, lid on, high heat.",
+        zh:"小鍋裝 500 毫升水，蓋上蓋子，開大火。",
+        wait:180, label:"Water coming to a boil", labelZh:"等水滾" },
+      { text:"Water's up. Drop the noodle block in and leave it alone — no seasoning yet.",
+        zh:"水滾了。麵餅放下去就別動它，調味包先不要加。",
+        wait:90, label:"Noodles softening", labelZh:"等麵變軟" },
+      { text:"Crack the egg straight onto the noodles. Don't stir it, let it set.",
+        zh:"蛋直接打在麵上面，不要攪，讓它自己凝固。",
+        wait:60, label:"Egg setting", labelZh:"等蛋凝固" },
+      { text:"Now the sachets — but only half the oil packet. Trust me on that one.",
+        zh:"現在加調味包，但油包只加一半，相信我。" },
+      { text:"Greens in, then kill the heat. They'll cook in the heat that's left.",
+        zh:"青菜丟進去，然後關火，餘溫就會把它燙熟。",
+        wait:30, label:"Greens wilting", labelZh:"等青菜變軟" },
+      { text:"Into a bowl. Scallion on top, a spoon of chilli crisp. That's dinner.",
+        zh:"盛進碗裡，撒上蔥花，加一匙辣油。晚餐好了。" }
     ]
   },
   {
@@ -287,20 +307,27 @@ const RECIPES = [
     zh:"番茄炒蛋", en:"Tomato Egg Stir-fry",
     minutes:15,
     blurb:"The dish every kitchen in Taiwan can make blindfolded.",
+    blurbZh:"台灣每個廚房閉著眼睛都會做的一道。",
     keys:["番茄","蕃茄","雞蛋","蛋","蔥","糖","鹽","tomato","tomatoes","egg","eggs","sugar","scallion"],
     ingredients:[
-      { zh:"番茄",   en:"2 tomatoes, in wedges" },
-      { zh:"雞蛋",   en:"3 eggs" },
-      { zh:"蔥花",   en:"Chopped scallion" },
-      { zh:"糖",     en:"A pinch of sugar" },
-      { zh:"鹽",     en:"Salt" }
+      { zh:"番茄 2 顆（切塊）", en:"2 tomatoes, in wedges" },
+      { zh:"雞蛋 3 顆",        en:"3 eggs" },
+      { zh:"蔥花 適量",        en:"Chopped scallion" },
+      { zh:"糖 一小撮",        en:"A pinch of sugar" },
+      { zh:"鹽 適量",          en:"Salt" }
     ],
     steps:[
-      { text:"Beat three eggs with a pinch of salt until it's all one colour." },
-      { text:"Hot pan, generous oil. Egg in, push it around until it's just set, then take it straight out." },
-      { text:"Same pan, tomato wedges in. Don't touch them — let them collapse on their own.", wait:120, label:"Tomatoes breaking down" },
-      { text:"A pinch of sugar now. That's the trick — it takes the sourness off." },
-      { text:"Egg back in, fold it through twice, scallion on top, off the heat." }
+      { text:"Beat three eggs with a pinch of salt until it's all one colour.",
+        zh:"三顆蛋加一點鹽打散，打到顏色均勻。" },
+      { text:"Hot pan, generous oil. Egg in, push it around until it's just set, then take it straight out.",
+        zh:"鍋燒熱、油多一點。蛋下鍋推到剛凝固就馬上盛起來。" },
+      { text:"Same pan, tomato wedges in. Don't touch them — let them collapse on their own.",
+        zh:"同一個鍋，番茄下鍋。不要翻動，讓它自己出水軟掉。",
+        wait:120, label:"Tomatoes breaking down", labelZh:"等番茄出水軟掉" },
+      { text:"A pinch of sugar now. That's the trick — it takes the sourness off.",
+        zh:"這時候加一小撮糖，這是關鍵，可以把酸味壓下去。" },
+      { text:"Egg back in, fold it through twice, scallion on top, off the heat.",
+        zh:"蛋倒回去，翻拌兩下，撒蔥花，關火。" }
     ]
   },
   {
@@ -308,24 +335,35 @@ const RECIPES = [
     zh:"蒜香奶油炒飯", en:"Garlic Butter Fried Rice",
     minutes:10,
     blurb:"Yesterday's rice, and four cloves of garlic doing all the work.",
+    blurbZh:"隔夜飯，加四瓣蒜就搞定。",
     keys:["飯","冷飯","白飯","蒜","蒜頭","奶油","醬油","蔥","蛋","雞蛋","rice","garlic","butter","soy","scallion","egg"],
     ingredients:[
-      { zh:"冷飯",   en:"2 bowls day-old rice" },
-      { zh:"蒜頭",   en:"4 cloves garlic, chopped" },
-      { zh:"奶油",   en:"A big knob of butter" },
-      { zh:"醬油",   en:"Soy sauce" },
-      { zh:"雞蛋",   en:"1 egg" },
-      { zh:"蔥花",   en:"Chopped scallion" }
+      { zh:"冷飯 2 碗",          en:"2 bowls day-old rice" },
+      { zh:"蒜頭 4 瓣（切末）",  en:"4 cloves garlic, chopped" },
+      { zh:"奶油 一大塊",        en:"A big knob of butter" },
+      { zh:"醬油 適量",          en:"Soy sauce" },
+      { zh:"雞蛋 1 顆",          en:"1 egg" },
+      { zh:"蔥花 適量",          en:"Chopped scallion" }
     ],
     steps:[
-      { text:"Melt a big knob of butter on medium heat, then slide the chopped garlic in.", wait:60, label:"Garlic going golden" },
-      { text:"Garlic's golden — rice in. Break every clump with the back of the spoon.", wait:90, label:"Rice frying" },
-      { text:"Push the rice to one side, crack the egg into the gap, scramble it there, then mix it through." },
-      { text:"Soy sauce down the hot side of the pan, not onto the rice. You'll hear it." },
-      { text:"Scallion, one last toss, and it's done." }
+      { text:"Melt a big knob of butter on medium heat, then slide the chopped garlic in.",
+        zh:"中火融一大塊奶油，然後把蒜末滑進去。",
+        wait:60, label:"Garlic going golden", labelZh:"等蒜變金黃" },
+      { text:"Garlic's golden — rice in. Break every clump with the back of the spoon.",
+        zh:"蒜變金黃了，飯下鍋。用鍋鏟背面把飯粒壓散。",
+        wait:90, label:"Rice frying", labelZh:"炒飯中" },
+      { text:"Push the rice to one side, crack the egg into the gap, scramble it there, then mix it through.",
+        zh:"飯撥到一邊，蛋打進空位炒散，再跟飯拌勻。" },
+      { text:"Soy sauce down the hot side of the pan, not onto the rice. You'll hear it.",
+        zh:"醬油沿著鍋邊淋，不要直接倒在飯上，你會聽到滋一聲。" },
+      { text:"Scallion, one last toss, and it's done.",
+        zh:"撒蔥花，最後翻一下，完成。" }
     ]
   }
 ];
+
+/* Stage names the person actually reads. */
+const STAGE_ZH = { idle:"待命", picking:"選菜", cooking:"下鍋", waiting:"等待", done:"完成" };
 
 /* ---- state ----------------------------------------------------- */
 
@@ -371,6 +409,7 @@ const timerEl     = document.getElementById("timer");
 const ringFg      = document.getElementById("ringFg");
 const ringNum     = document.getElementById("ringNum");
 const timerLabel  = document.getElementById("timerLabel");
+const timerLabelZh= document.getElementById("timerLabelZh");
 const timerState  = document.getElementById("timerState");
 const langSel     = document.getElementById("langSel");
 const nudgeChk    = document.getElementById("nudgeChk");
@@ -385,7 +424,7 @@ ringFg.style.strokeDashoffset = RING_LEN;
 function setStage(s){
   stage = s;
   stageEl.className = "stage " + s;
-  stageTextEl.textContent = s;
+  stageTextEl.textContent = s + " " + (STAGE_ZH[s] || "");
   render();
 }
 
@@ -396,18 +435,21 @@ function render(){
 
 function renderLive(){
   if(!recipe){
-    stageCardT.textContent = "Tonight";
+    stageCardT.innerHTML = 'Tonight <em>今晚</em>';
     liveEl.innerHTML = `
       <div class="idle">
         Tell me <b>what you feel like eating</b> — or just read out what's in the fridge
-        and I'll find something.<br><br>
-        Then keep your hands where they are. I'll walk you through it one step at a time,
-        and I'll stay on the line while things cook.
+        and I'll find something. Then keep your hands where they are: I'll walk you
+        through it one step at a time, and stay on the line while things cook.
+        <div class="stepzh" style="margin-top:14px">
+          跟我說<b style="color:#e8c78f">你想吃什麼</b>，或直接報冰箱裡有什麼，我幫你挑。
+          然後手就別動了，我會一步一步帶你煮，等待的時候也會一直陪著你講話。
+        </div>
       </div>`;
     return;
   }
   const done = stepIdx >= recipe.steps.length;
-  stageCardT.textContent = done ? "Finished" : "Right now";
+  stageCardT.innerHTML = done ? 'Finished <em>完成</em>' : 'Right now <em>現在這一步</em>';
   const head = `
     <div class="dishname">
       <span class="zh">${recipe.zh}</span>
@@ -415,45 +457,60 @@ function renderLive(){
     </div>`;
   if(done){
     liveEl.innerHTML = head + `
-      <div class="stepnum">DONE</div>
-      <div class="steptext">Sit down and eat it while it's hot. I'll be here.</div>`;
+      <div class="stepnum">DONE 完成</div>
+      <div class="steptext">Sit down and eat it while it's hot. I'll be here.</div>
+      <div class="stepzh">趁熱坐下來吃吧，我在這裡。</div>`;
     return;
   }
+  const st = recipe.steps[stepIdx];
   liveEl.innerHTML = head + `
-    <div class="stepnum">STEP ${stepIdx + 1} OF ${recipe.steps.length}</div>
-    <div class="steptext">${recipe.steps[stepIdx].text}</div>`;
+    <div class="stepnum">STEP ${stepIdx + 1} OF ${recipe.steps.length} &middot; 第 ${stepIdx + 1} 步／共 ${recipe.steps.length} 步</div>
+    <div class="steptext">${st.text}</div>
+    <div class="stepzh">${st.zh}</div>`;
 }
 
 function renderSide(){
   if(!recipe){
-    sideEl.querySelector("h2").textContent = "Recipe book";
+    sideEl.querySelector("h2").innerHTML = 'Recipe book <em>食譜書</em>';
     sideBodyEl.innerHTML = `<div class="menu">` + RECIPES.map(r => `
       <div class="dish ${matched.includes(r.id) ? "hit" : ""}">
         <div class="zh">${r.zh}</div>
         <div class="en">${r.en}</div>
         <div class="meta">${r.minutes} min &middot; ${r.blurb}</div>
+        <div class="meta" style="color:#c9b9a6">${r.minutes} 分鐘 &middot; ${r.blurbZh}</div>
       </div>`).join("") + `</div>`;
     return;
   }
-  sideEl.querySelector("h2").textContent = "What you need";
+  sideEl.querySelector("h2").innerHTML = 'What you need <em>需要準備</em>';
   sideBodyEl.innerHTML = `
     <div class="ing">${recipe.ingredients.map(i => `<span>${i.zh}<i>${i.en}</i></span>`).join("")}</div>
-    <h2 style="margin:20px 0 10px">The whole way through</h2>
+    <h2 style="margin:20px 0 10px">The whole way through <em>完整步驟</em></h2>
     <ul class="steps">${recipe.steps.map((s,i) => `
       <li class="${i === stepIdx ? "now" : (i < stepIdx ? "past" : "")}">
         <span class="n">${i < stepIdx ? "&#10003;" : i + 1}</span>
-        <span>${s.text}</span>
+        <span>${s.text}<span class="zh">${s.zh}</span></span>
       </li>`).join("")}</ul>`;
 }
 
-function say(who, text, cls){
+function say(who, text, cls, zh){
   const div = document.createElement("div");
   div.className = "line " + (cls || "");
-  div.innerHTML = `<span class="who">${who}</span><span class="txt"></span>`;
+  div.innerHTML = `<span class="who">${who}</span><span class="body"><span class="txt"></span><span class="zh"></span></span>`;
   div.querySelector(".txt").textContent = text;
+  if(zh) div.querySelector(".zh").textContent = zh;
   feedEl.appendChild(div);
   feedEl.scrollTop = feedEl.scrollHeight;
   return div;
+}
+
+/* The voice stays English; this is how the person actually follows it. */
+function subtitle(zh){
+  if(!zh) return;
+  const target = agentLine || Array.from(feedEl.querySelectorAll(".line")).reverse()
+      .find(l => !l.classList.contains("you") && !l.classList.contains("act"));
+  if(target) target.querySelector(".zh").textContent = zh;
+  else say("圓圓", "", "", zh);
+  feedEl.scrollTop = feedEl.scrollHeight;
 }
 
 let partialLine = null;
@@ -499,12 +556,13 @@ function showError(msg){ errEl.textContent = msg; }
 
 let timerId = null, timerEnd = 0, timerTotal = 0;
 
-function startTimer(seconds, label){
+function startTimer(seconds, label, labelZh){
   clearTimer();
   timerTotal = Math.max(1, Math.round(seconds));
   timerEnd = Date.now() + timerTotal * 1000;
   timerLabel.textContent = label || "";
-  timerState.textContent = "Waiting";
+  timerLabelZh.textContent = labelZh || "";
+  timerState.textContent = "Waiting 等待中";
   timerEl.classList.add("on");
   timerEl.classList.remove("rang");
   tickTimer();
@@ -523,9 +581,10 @@ function tickTimer(){
 function ringTimer(){
   clearInterval(timerId); timerId = null;
   timerEl.classList.add("rang");
-  timerState.textContent = "Time's up";
+  timerState.textContent = "Time's up 時間到";
   chime();
-  say("TIMER", (timerLabel.textContent || "Timer") + " — done", "act");
+  say("TIMER", (timerLabel.textContent || "Timer") + " — done", "act",
+      (timerLabelZh.textContent || "計時") + " — 時間到");
   if(stage === "waiting") setStage("cooking");
   // Experimental: let the agent speak first. Unverified against the API,
   // so it is off unless the person ticks the box.
@@ -577,6 +636,8 @@ function stepPayload(){
     step_number: stepIdx + 1,
     of: recipe.steps.length,
     instruction: s.text,
+    instruction_zh: s.zh,
+    subtitle_hint: "Say the English instruction out loud, then call show_subtitle with instruction_zh.",
     timer_running: !!s.wait,
     timer_seconds: s.wait || 0,
     stage
@@ -598,7 +659,8 @@ const TOOLS = {
     if(!scored.length){
       return { matches: [], message: "Nothing in the book matches that. Offer the three dishes by name instead.", book: RECIPES.map(r => r.en) };
     }
-    say("MATCH", scored.map(x => x.r.en).join(", "), "act");
+    say("MATCH", scored.map(x => x.r.en).join(", "), "act",
+        "配對到：" + scored.map(x => x.r.zh).join("、"));
     return {
       matches: scored.map(x => ({
         dish: x.r.en, dish_zh: x.r.zh, minutes: x.r.minutes,
@@ -614,9 +676,10 @@ const TOOLS = {
     clearTimer();
     setStage("cooking");
     saveState();
-    say("RECIPE", r.en + " — " + r.steps.length + " steps", "act");
+    say("RECIPE", r.en + " — " + r.steps.length + " steps", "act",
+        r.zh + " — 共 " + r.steps.length + " 步");
     const first = recipe.steps[0];
-    if(first.wait) startTimer(first.wait, first.label);
+    if(first.wait) startTimer(first.wait, first.label, first.labelZh);
     return {
       dish: r.en, dish_zh: r.zh, total_steps: r.steps.length,
       ingredients: r.ingredients.map(i => i.en),
@@ -632,23 +695,32 @@ const TOOLS = {
     if(stepIdx >= recipe.steps.length){
       clearTimer();
       setStage("done");
-      say("RECIPE", recipe.en + " — finished", "act");
+      say("RECIPE", recipe.en + " — finished", "act", recipe.zh + " — 完成");
       return { finished:true, dish:recipe.en, message:"That was the last step. Tell them it's ready, briefly." };
     }
     const s = recipe.steps[stepIdx];
     clearTimer();
-    if(s.wait) startTimer(s.wait, s.label);
+    if(s.wait) startTimer(s.wait, s.label, s.labelZh);
     else setStage("cooking");
     return stepPayload();
   },
 
   repeat_step(){ return stepPayload(); },
 
-  set_timer({ seconds, label }){
+  // The person's English is weak. The voice stays English for the room;
+  // this is the line they actually read.
+  show_subtitle({ zh }){
+    const t = String(zh || "").trim();
+    if(!t) return { error:"Nothing to show. Pass the Traditional Chinese text." };
+    subtitle(t);
+    return { shown:true };
+  },
+
+  set_timer({ seconds, label, label_zh }){
     const n = Math.round(Number(seconds) || 0);
     if(!n || n < 1) return { error:"How long? Ask them for a number." };
     if(n > 3600) return { error:"That is longer than an hour — check the number with them." };
-    startTimer(n, label || "Timer");
+    startTimer(n, label || "Timer", label_zh || "計時");
     return { timer_running:true, seconds:n, label: label || "Timer", stage };
   }
 };
@@ -679,11 +751,19 @@ const TOOL_SCHEMA = [
     parameters:{ type:"object", properties:{} }
   },
   {
+    type:"function", name:"show_subtitle",
+    description:"Put the Traditional Chinese meaning of what you just said on the screen. The person's English is weak and reads the screen to follow you. Call this after every single spoken reply.",
+    parameters:{ type:"object", properties:{
+      zh:{ type:"string", description:"Traditional Chinese for exactly what you just said out loud" }
+    }, required:["zh"] }
+  },
+  {
     type:"function", name:"set_timer",
     description:"Start a timer they asked for by hand, on top of the recipe's own timers.",
     parameters:{ type:"object", properties:{
       seconds:{ type:"number", description:"How many seconds" },
-      label:{ type:"string", description:"Short label, e.g. 'Noodles'" }
+      label:{ type:"string", description:"Short label, e.g. 'Noodles'" },
+      label_zh:{ type:"string", description:"The same label in Traditional Chinese, e.g. '煮麵'" }
     }, required:["seconds"] }
   }
 ];
@@ -710,12 +790,18 @@ Your tone follows the stage that the tools hand back:
   Do NOT push them back to the recipe, and do NOT announce the countdown.
 - done: proud of them for a sentence, then get out of the way.
 
+SUBTITLES — the most important rule:
+The person you are cooking with does not read English well. Your voice is English, but the screen is
+how they actually follow you. After EVERY spoken reply, immediately call show_subtitle with the
+Traditional Chinese for exactly what you just said. Every reply, no exceptions, including small talk.
+When you have just read out a recipe step, pass the instruction_zh the tool gave you, word for word.
+
 Rules:
 ${replyRule}
 - To move forward, call next_step — and only when they say they have finished the current step.
 - Never recite a step you did not get back from a tool. You do not know any recipe by heart.
 - If they missed something, call repeat_step.
-- If they ask you to time something, call set_timer.
+- If they ask you to time something, call set_timer, and pass label_zh in Traditional Chinese too.
 - If you did not catch the dish or the number, ask one short question instead of guessing.
 - Never invent a dish. You only know what the tools give you.`;
 }
@@ -724,13 +810,14 @@ const GREETING = {
   en: "Hey, I'm here. What are we making?",
   zh: "我在喔，今天想煮什麼？"
 };
+const GREETING_ZH = "我在喔，今天想煮什麼？";
 
 const KEYTERMS = [
   "泡麵","泡麵升級版","番茄炒蛋","炒飯","蒜香奶油炒飯",
   "雞蛋","番茄","青菜","蔥花","辣油","蒜頭","奶油","醬油","冷飯",
   "下一步","好了","再講一次","沒聽到","計時","幾分鐘","水滾了","關火","可以了嗎",
   "upgraded instant noodles","tomato egg","garlic butter fried rice",
-  "next step","say that again","set a timer"
+  "next step","say that again","set a timer","翻譯","中文"
 ];
 
 /* ---- the voice session ------------------------------------------- */
@@ -751,7 +838,7 @@ function nudge(text){
 
 async function start(){
   showError("");
-  setStatus("Connecting…", "connecting");
+  setStatus("Connecting… 連線中", "connecting");
   micBtn.disabled = true;
   settingsEl.classList.add("off");
 
@@ -764,7 +851,7 @@ async function start(){
   }catch(e){
     micBtn.disabled = false;
     settingsEl.classList.remove("off");
-    setStatus("Not connected");
+    setStatus("Not connected 未連線");
     showError(`Could not get a session token — ${e.message}. Is ASSEMBLYAI_API_KEY set on the deployment?`);
     return;
   }
@@ -776,7 +863,7 @@ async function start(){
   }catch(e){
     micBtn.disabled = false;
     settingsEl.classList.remove("off");
-    setStatus("Not connected");
+    setStatus("Not connected 未連線");
     showError("Microphone permission denied — the browser needs it to hear you.");
     return;
   }
@@ -814,9 +901,11 @@ async function start(){
         running = true;
         micBtn.disabled = false;
         micBtn.classList.add("on");
-        micLabel.textContent = "Stop";
-        setStatus("Listening", "live");
+        micLabel.textContent = "Stop 停止";
+        setStatus("Listening 聆聽中", "live");
         if(stage === "idle") setStage("picking");
+        // The greeting is spoken before the agent can call a tool, so seed its subtitle here.
+        setTimeout(() => subtitle(GREETING_ZH), 900);
         await openMic();
         break;
 
@@ -990,8 +1079,8 @@ function stop(){
   micBtn.disabled = false;
   micBtn.classList.remove("on");
   settingsEl.classList.remove("off");
-  micLabel.textContent = "Start talking";
-  setStatus("Not connected");
+  micLabel.textContent = "Start talking 開始說話";
+  setStatus("Not connected 未連線");
 }
 
 micBtn.addEventListener("click", () => running ? stop() : start());

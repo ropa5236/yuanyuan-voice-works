@@ -49,15 +49,19 @@ The companion's tone is not one flat prompt. Every tool call hands a **stage** b
 - **`interrupt_response` barge-in** — cut it off mid-sentence with your hands full, no button to press. In a kitchen that is the difference between usable and not.
 - **Cloudflare Pages + Pages Functions** — short-lived session tokens, so the API key never reaches the browser
 
-## The five tools
+## The six tools
 
-`suggest_dishes` · `start_recipe` · `next_step` · `repeat_step` · `set_timer`
+`suggest_dishes` · `start_recipe` · `next_step` · `repeat_step` · `show_subtitle` · `set_timer`
 
 Every step the agent speaks comes back from a tool. The system prompt forbids reciting a recipe from memory, so nothing gets invented on stage.
 
-## Language
+## One voice, two languages
 
-The build ships a switch: **you speak Mandarin, it answers in English** — or it answers in Traditional Chinese. Companionship lives or dies on how it sounds, so that one is decided by ear, not on paper.
+You speak Mandarin. **It answers in English — and puts the Traditional Chinese on screen as it goes.**
+
+`show_subtitle` is a tool like any other: after every spoken line, the agent hands the screen the Chinese for what it just said. Recipe steps carry their own translation in the data, so those are exact. Everything else — the small talk while the water boils — the agent translates itself, live.
+
+That is the whole cross-language idea in one move: the room hears English, the cook reads Chinese, and neither one is a second-class experience.
 
 ## Scope
 
