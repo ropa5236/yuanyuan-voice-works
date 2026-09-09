@@ -83,7 +83,25 @@ The voice switch stays in the build for testing, but the demo runs on English.
 
 **The agent answered itself.** `show_subtitle` was first written to be called *after* every spoken reply. But a tool result always prompts a fresh turn from the model — so it spoke, subtitled, was handed a result, spoke again, subtitled again, and never stopped. Moving the call to the *start* of the turn fixes it: the tool result becomes the cue for the one spoken reply, and the turn ends there. Any "do this after you speak" tool has this shape of failure.
 
+**It also sounded broken.** Each audio chunk was started as its own source with a hard edge, so the
+voice swelled and clipped at every seam. Fixed with one shared gain node, a 180 ms lead-in before the
+first chunk, and a 4 ms ramp at each join — and by restarting the lead instead of stacking chunks
+when the network underruns, which is what made it swell.
+
 **It also heard itself.** On laptop speakers its own voice returns through the microphone, gets transcribed as the cook talking, and with barge-in on it interrupts itself. The client now stops sending microphone frames while agent audio is playing, and only turns barge-in on when the person ticks *I'm on headphones*.
+
+## The screen holds almost nothing
+
+The steps are not displayed. A cook with wet hands does not read a monitor, and a recipe list on
+screen is just furniture — it takes up the room and nobody looks at it. The agent holds the recipe;
+the screen holds three things:
+
+- **a progress bar across the top** — how far along, no words
+- **the dish and the timer** — one line
+- **the conversation** — English on top, Traditional Chinese underneath, in the same block
+
+That is the argument for the whole product in one layout: if the screen mattered, this would not be
+a voice product.
 
 ## Scope defence
 
