@@ -56,6 +56,8 @@
 2. **濕手打斷它**，不碰螢幕
 3. **成品端出來**，它安靜下來
 
+**還要補一個特寫**：它講完英文的下一秒，畫面上跳出中文那一行。這一格要拍清楚，那是「一個模型同時吐兩種語言」的視覺證據。
+
 **中英夾雜示範點**：在 2:20 那句故意講「你剛剛說幾 ml？」，讓中英混句被正確辨識。
 
 ## 3:30–4:20　技術（畫面切螢幕錄影 + 簡單圖）
@@ -65,6 +67,9 @@
 1. **工具驅動的個性狀態機** — 畫五個工具 → 回傳 stage → 改寫語氣。一句話：「Same model, four characters.」
 2. **`keyterms` 撐住雙語廚房** — 螢幕上放中文菜名，示範它在英文句子裡也認得
 3. **等待中的插話打斷** — 回放 2:55 那一秒，加一行 `interrupt_response: true`
+
+補一句話帶過第四點：
+> "It speaks English and writes Chinese in the same turn. The subtitle is a tool call, not a translation service."
 
 **一定要講的一句**：
 > "Every step it says came back from a tool. It is not allowed to recite a recipe from memory."

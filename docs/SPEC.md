@@ -37,7 +37,7 @@ The companion's personality shifts with the stage. This is the originality beat 
 
 The demo video films path 1 only. Path 2 stays in the build so the prototype does not feel like a rail.
 
-## Tools (5)
+## Tools (6)
 
 | Tool | Args | Does |
 | --- | --- | --- |
@@ -45,7 +45,8 @@ The demo video films path 1 only. Path 2 stays in the build so the prototype doe
 | `start_recipe` | `dish: string` | loads the recipe, renders ingredients + step 1, stage → `cooking` |
 | `next_step` | — | advances; auto-starts the step's timer if it has one (stage → `waiting`); returns `finished` after the last step |
 | `repeat_step` | — | returns the current step verbatim, for "sorry, say that again" |
-| `set_timer` | `seconds`, `label` | ad-hoc timer — "give me three minutes" |
+| `show_subtitle` | `zh` | puts the Traditional Chinese for what it just said on screen — called after **every** spoken reply |
+| `set_timer` | `seconds`, `label`, `label_zh` | ad-hoc timer — "give me three minutes" |
 
 Every step the agent speaks must come back from a tool. The system prompt forbids reciting a recipe from memory, so nothing is hallucinated on stage.
 
@@ -55,14 +56,19 @@ Every step the agent speaks must come back from a tool. The system prompt forbid
 
 Two more recipes ship so `suggest_dishes` has something to choose from: Tomato Egg Stir-fry / 番茄炒蛋 and Garlic Butter Fried Rice / 蒜香奶油炒飯.
 
-## Language
+## Language — decided
 
-Undecided on purpose — the build ships a switch.
+**The voice is English. The screen is always bilingual.**
 
-- **EN reply** — you speak Mandarin, it answers in English. Cross-language is a real technical beat.
-- **ZH reply** — it answers in Traditional Chinese. Warmer, but the voice roster needs checking.
+The cook does not read English well, and a companion you cannot understand is not a companion. But switching the voice to Mandarin would throw away the cross-language beat and lean on a voice roster that has not been verified.
 
-Record one gap in each mode, listen back, then pick. Companionship lives or dies on this, so it is not a decision to make on paper.
+So the split is: English out of the speaker, Traditional Chinese on the glass.
+
+- **Recipe steps** carry a hand-written Chinese line in the data — exact, never paraphrased by a model.
+- **Everything else** — the small talk in the waiting gaps — goes through `show_subtitle`, which the agent calls after every spoken line with its own translation.
+- **The whole interface** is written twice: stage, status, headings, buttons, timer labels.
+
+The voice switch stays in the build for testing, but the demo runs on English.
 
 ## Technical beats (replaces the old three)
 
@@ -71,6 +77,7 @@ Record one gap in each mode, listen back, then pick. Companionship lives or dies
 1. **Tool-driven personality state** — the agent's tone is not one static prompt; the stage returned by each tool call rewrites how it behaves. Same model, four characters.
 2. **`keyterms` for a bilingual kitchen** — dish and ingredient names are fed in as Mandarin key terms so "泡麵升級版" and "蔥花" survive recognition even mid-English sentence.
 3. **Barge-in over a live timer** — `interrupt_response` is on, so you can cut the agent off mid-sentence with wet hands and no button. In a kitchen, that is the difference between usable and not.
+4. **Subtitles as a tool call** — the agent speaks English and, in the same turn, hands the screen the Traditional Chinese. Voice and text in two languages at once, driven by the model, not a translation API.
 
 ## Scope defence
 
