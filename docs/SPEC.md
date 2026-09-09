@@ -45,7 +45,7 @@ The demo video films path 1 only. Path 2 stays in the build so the prototype doe
 | `start_recipe` | `dish: string` | loads the recipe, renders ingredients + step 1, stage → `cooking` |
 | `next_step` | — | advances; auto-starts the step's timer if it has one (stage → `waiting`); returns `finished` after the last step |
 | `repeat_step` | — | returns the current step verbatim, for "sorry, say that again" |
-| `show_subtitle` | `zh` | puts the Traditional Chinese for what it just said on screen — called after **every** spoken reply |
+| `show_subtitle` | `zh` | puts the Traditional Chinese of the line it is **about to** say on screen — called once at the start of a turn, before speaking |
 | `set_timer` | `seconds`, `label`, `label_zh` | ad-hoc timer — "give me three minutes" |
 
 Every step the agent speaks must come back from a tool. The system prompt forbids reciting a recipe from memory, so nothing is hallucinated on stage.
@@ -77,7 +77,13 @@ The voice switch stays in the build for testing, but the demo runs on English.
 1. **Tool-driven personality state** — the agent's tone is not one static prompt; the stage returned by each tool call rewrites how it behaves. Same model, four characters.
 2. **`keyterms` for a bilingual kitchen** — dish and ingredient names are fed in as Mandarin key terms so "泡麵升級版" and "蔥花" survive recognition even mid-English sentence.
 3. **Barge-in over a live timer** — `interrupt_response` is on, so you can cut the agent off mid-sentence with wet hands and no button. In a kitchen, that is the difference between usable and not.
-4. **Subtitles as a tool call** — the agent speaks English and, in the same turn, hands the screen the Traditional Chinese. Voice and text in two languages at once, driven by the model, not a translation API.
+4. **Subtitles as a tool call** — the agent hands the screen the Traditional Chinese, then says the same line in English. Voice and text in two languages in one turn, driven by the model, not a translation API.
+
+## Two bugs worth remembering
+
+**The agent answered itself.** `show_subtitle` was first written to be called *after* every spoken reply. But a tool result always prompts a fresh turn from the model — so it spoke, subtitled, was handed a result, spoke again, subtitled again, and never stopped. Moving the call to the *start* of the turn fixes it: the tool result becomes the cue for the one spoken reply, and the turn ends there. Any "do this after you speak" tool has this shape of failure.
+
+**It also heard itself.** On laptop speakers its own voice returns through the microphone, gets transcribed as the cook talking, and with barge-in on it interrupts itself. The client now stops sending microphone frames while agent audio is playing, and only turns barge-in on when the person ticks *I'm on headphones*.
 
 ## Scope defence
 
