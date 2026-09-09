@@ -238,6 +238,10 @@
         <option value="zh">繁體中文</option>
       </select>
     </label>
+    <label title="On speakers the agent hears itself and answers itself. Tick this only when you are wearing headphones — it turns barge-in back on.">
+      <input type="checkbox" id="headphoneChk" />
+      I'm on headphones 我戴著耳機 <span style="opacity:.6">(barge-in 可中途插話)</span>
+    </label>
     <label title="Experimental: lets the agent speak first when a timer ends. Verify against the API before filming.">
       <input type="checkbox" id="nudgeChk" />
       Speak first when a timer ends 計時結束時主動開口 <span style="opacity:.6">(experimental 實驗中)</span>
@@ -413,6 +417,7 @@ const timerLabelZh= document.getElementById("timerLabelZh");
 const timerState  = document.getElementById("timerState");
 const langSel     = document.getElementById("langSel");
 const nudgeChk    = document.getElementById("nudgeChk");
+const headphoneChk= document.getElementById("headphoneChk");
 const settingsEl  = document.getElementById("settings");
 
 const RING_LEN = 2 * Math.PI * 32;
@@ -709,11 +714,16 @@ const TOOLS = {
 
   // The person's English is weak. The voice stays English for the room;
   // this is the line they actually read.
+  //
+  // Called BEFORE the spoken reply, never after. A tool result always prompts a
+  // new turn from the model — so a subtitle tool called *after* speaking makes the
+  // agent answer itself, forever. Putting it first makes the tool result the thing
+  // that triggers the one spoken reply, and the turn ends there.
   show_subtitle({ zh }){
     const t = String(zh || "").trim();
     if(!t) return { error:"Nothing to show. Pass the Traditional Chinese text." };
     subtitle(t);
-    return { shown:true };
+    return { ok:true, now:"Say that same line in English, then stop and wait for them." };
   },
 
   set_timer({ seconds, label, label_zh }){
@@ -752,9 +762,9 @@ const TOOL_SCHEMA = [
   },
   {
     type:"function", name:"show_subtitle",
-    description:"Put the Traditional Chinese meaning of what you just said on the screen. The person's English is weak and reads the screen to follow you. Call this after every single spoken reply.",
+    description:"Put the Traditional Chinese of what you are ABOUT to say on the screen, then say it in English. Call this once at the start of your turn, before you speak. Never after speaking, and never twice in one turn.",
     parameters:{ type:"object", properties:{
-      zh:{ type:"string", description:"Traditional Chinese for exactly what you just said out loud" }
+      zh:{ type:"string", description:"Traditional Chinese for the line you are about to say out loud" }
     }, required:["zh"] }
   },
   {
@@ -790,11 +800,20 @@ Your tone follows the stage that the tools hand back:
   Do NOT push them back to the recipe, and do NOT announce the countdown.
 - done: proud of them for a sentence, then get out of the way.
 
-SUBTITLES — the most important rule:
+SUBTITLES — how every turn of yours is shaped:
 The person you are cooking with does not read English well. Your voice is English, but the screen is
-how they actually follow you. After EVERY spoken reply, immediately call show_subtitle with the
-Traditional Chinese for exactly what you just said. Every reply, no exceptions, including small talk.
-When you have just read out a recipe step, pass the instruction_zh the tool gave you, word for word.
+how they actually follow you.
+
+So each time it is your turn, in this order:
+1. Work out what you want to say.
+2. Call show_subtitle ONCE with the Traditional Chinese of that line.
+3. Say that same line out loud in English.
+4. Stop. Wait for them. Do not start another turn on your own.
+
+Never call show_subtitle after you have spoken, and never twice in the same turn.
+When you are reading out a recipe step, pass the instruction_zh the tool gave you, word for word.
+If a tool hands you back a result, that is your cue to speak once — not a message from the person.
+The only voice you ever answer is theirs.
 
 Rules:
 ${replyRule}
@@ -825,6 +844,32 @@ const KEYTERMS = [
 let ws = null, audioCtx = null, micStream = null, workletNode = null, sourceNode = null;
 let playCtx = null, playHead = 0;
 let running = false;
+
+/* ---- the echo gate ------------------------------------------------
+   On laptop speakers the agent hears itself: its own voice goes out, comes
+   back through the mic, and gets transcribed as the cook talking. It then
+   answers itself. Unless the person is on headphones, we simply stop sending
+   microphone frames while the agent's voice is playing.
+   ------------------------------------------------------------------- */
+
+let agentSpeaking = false, gateTimer = null;
+let headphones = false;   // read from the UI when the session starts
+
+function agentAudioStart(){
+  if(headphones) return;
+  agentSpeaking = true;
+  clearTimeout(gateTimer);
+}
+function agentAudioEndsSoon(){
+  if(headphones) return;
+  const remainMs = playCtx ? Math.max(0, (playHead - playCtx.currentTime) * 1000) : 0;
+  clearTimeout(gateTimer);
+  gateTimer = setTimeout(() => { agentSpeaking = false; }, remainMs + 350);
+}
+function openGate(){
+  clearTimeout(gateTimer);
+  agentSpeaking = false;
+}
 
 function nudge(text){
   // Unverified message shape — this is the one thing left to test against
@@ -869,6 +914,8 @@ async function start(){
   }
 
   const lang = langSel.value;
+  headphones = headphoneChk.checked;
+  openGate();
   const url = new URL(AGENT_WS);
   url.searchParams.set("token", token);
   ws = new WebSocket(url);
@@ -882,9 +929,10 @@ async function start(){
         input:{
           format:{ encoding:"audio/pcm" },
           keyterms: KEYTERMS,
-          // interrupt_response is the kitchen feature: cut it off mid-sentence
-          // with your hands full, no button.
-          turn_detection:{ vad_threshold:0.5, min_silence:500, max_silence:1400, interrupt_response:true }
+          // Barge-in is the kitchen feature: cut it off mid-sentence with your
+          // hands full, no button. It needs headphones — on speakers the agent
+          // hears itself and interrupts itself, so we only turn it on there.
+          turn_detection:{ vad_threshold:0.5, min_silence:500, max_silence:1400, interrupt_response: headphones }
         },
         output:{ voice:"anna", format:{ encoding:"audio/pcm" } },
         tools: TOOL_SCHEMA
@@ -931,12 +979,14 @@ async function start(){
         break;
 
       case "reply.audio":
+        agentAudioStart();
         playChunk(ev.data);
         break;
 
       case "reply.done":
         if(agentLine) commitAgent(agentBuf);
-        if(ev.status === "interrupted") stopPlayback();
+        if(ev.status === "interrupted"){ stopPlayback(); openGate(); }
+        else agentAudioEndsSoon();
         break;
 
       case "tool.call": {
@@ -1006,6 +1056,7 @@ async function openMic(){
   workletNode = new AudioWorkletNode(audioCtx, "pump");
   workletNode.port.onmessage = (e) => {
     if(!ws || ws.readyState !== WebSocket.OPEN) return;
+    if(agentSpeaking) return;   // it is talking — do not feed it its own voice
     ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(e.data) }));
   };
   sourceNode.connect(workletNode);
@@ -1079,6 +1130,7 @@ function stop(){
   micBtn.disabled = false;
   micBtn.classList.remove("on");
   settingsEl.classList.remove("off");
+  openGate();
   micLabel.textContent = "Start talking 開始說話";
   setStatus("Not connected 未連線");
 }
