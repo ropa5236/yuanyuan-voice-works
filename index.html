@@ -3,96 +3,152 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<!-- "stock" gets auto-translated as "shares" in Chinese browsers. Judges must see the original. -->
+<!-- Chinese browsers auto-translate the recipe text and mangle it. Judges must see the original. -->
 <meta name="google" content="notranslate" />
-<title>圓圓工作室 YuanYuan Voice Works — Daily Grind inventory</title>
+<title>圓圓 YuanYuan AI — a voice that cooks with you</title>
 <style>
   :root{
-    --bg:#0f1113;
-    --panel:#171a1d;
-    --panel-2:#1e2226;
-    --line:#2a2f34;
-    --text:#eef1f4;
-    --muted:#9aa4ad;
+    --bg:#141110;
+    --panel:#1d1917;
+    --panel-2:#25201d;
+    --line:#332c28;
+    --text:#f4efea;
+    --muted:#a0938a;
     --accent:#e8a13a;
     --accent-soft:rgba(232,161,58,.14);
-    --low:#e2574c;
-    --low-soft:rgba(226,87,76,.13);
-    --ok:#4fb477;
-    --radius:14px;
+    --sage:#8fb98a;
+    --sage-soft:rgba(143,185,138,.13);
+    --warm:#e0705a;
+    --radius:16px;
     --font:"Segoe UI",-apple-system,BlinkMacSystemFont,"Helvetica Neue",system-ui,"Noto Sans TC",sans-serif;
   }
   *{box-sizing:border-box}
   body{
     margin:0;background:var(--bg);color:var(--text);
-    font-family:var(--font);
-    -webkit-font-smoothing:antialiased;
+    font-family:var(--font);-webkit-font-smoothing:antialiased;
   }
-  .wrap{max-width:1080px;margin:0 auto;padding:28px 22px 120px}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 22px 150px}
 
-  header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:26px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
   .brand{display:flex;align-items:center;gap:12px}
   .mark{
-    width:38px;height:38px;border-radius:11px;flex:none;
+    width:40px;height:40px;border-radius:12px;flex:none;
     background:linear-gradient(150deg,var(--accent),#c9761f);
-    display:grid;place-items:center;font-weight:700;color:#241503;font-size:15px;
+    display:grid;place-items:center;font-size:20px;
   }
   h1{font-size:17px;margin:0;letter-spacing:.2px}
   .sub{color:var(--muted);font-size:12.5px;margin-top:3px}
   .sub .zhname{color:var(--text);font-weight:600}
 
-  .status{
-    display:flex;align-items:center;gap:9px;
+  .headright{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .status,.stage{
+    display:flex;align-items:center;gap:8px;
     background:var(--panel);border:1px solid var(--line);
     padding:8px 14px;border-radius:999px;font-size:12.5px;color:var(--muted);
   }
-  .dot{width:8px;height:8px;border-radius:50%;background:#555c63;flex:none;transition:background .2s}
-  .dot.live{background:var(--ok);box-shadow:0 0 0 4px rgba(79,180,119,.16)}
+  .dot{width:8px;height:8px;border-radius:50%;background:#5a504a;flex:none;transition:background .2s}
+  .dot.live{background:var(--sage);box-shadow:0 0 0 4px var(--sage-soft)}
   .dot.connecting{background:var(--accent);animation:pulse 1s infinite}
   @keyframes pulse{50%{opacity:.35}}
+  .stage b{color:var(--text);font-weight:600}
+  .stage.picking b{color:var(--accent)}
+  .stage.cooking b{color:var(--warm)}
+  .stage.waiting b{color:var(--sage)}
+  .stage.done b{color:var(--sage)}
 
-  .shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px}
-  .item{
-    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-    padding:16px 17px;position:relative;overflow:hidden;
-    transition:border-color .25s,background .25s,transform .25s;
-  }
-  .item.low{border-color:rgba(226,87,76,.45);background:linear-gradient(var(--low-soft),var(--low-soft)),var(--panel)}
-  .item.flash{animation:flash .7s ease-out}
-  @keyframes flash{
-    0%{transform:scale(1.03);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-    100%{transform:scale(1);box-shadow:none}
-  }
-  .item .zh{font-size:15px;font-weight:600}
-  .item .en{color:var(--muted);font-size:12px;margin-top:2px}
-  .qty{display:flex;align-items:baseline;gap:7px;margin-top:14px}
-  .qty b{font-size:34px;font-weight:650;letter-spacing:-1px;font-variant-numeric:tabular-nums}
-  .qty span{color:var(--muted);font-size:12.5px}
-  .par{margin-top:9px;font-size:11.5px;color:var(--muted)}
-  .badge{
-    position:absolute;top:14px;right:14px;
-    background:var(--low);color:#fff;font-size:10px;font-weight:700;
-    letter-spacing:.6px;padding:3px 8px;border-radius:999px;
-  }
+  .grid{display:grid;grid-template-columns:1.35fr .9fr;gap:16px;align-items:start}
+  @media(max-width:840px){ .grid{grid-template-columns:1fr} }
 
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px 21px}
+  .card h2{font-size:11px;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+
+  /* --- the recipe book, before anything is chosen --- */
+  .menu{display:grid;gap:11px}
+  .dish{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;transition:border-color .2s,transform .2s;
+  }
+  .dish.hit{border-color:rgba(232,161,58,.55);transform:translateX(3px)}
+  .dish .zh{font-size:15px;font-weight:600}
+  .dish .en{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .dish .meta{color:var(--muted);font-size:11.5px;margin-top:8px}
+
+  /* --- the live step --- */
+  .stepnum{color:var(--accent);font-size:11.5px;font-weight:700;letter-spacing:1px}
+  .steptext{font-size:23px;line-height:1.42;margin-top:10px;font-weight:500}
+  .dishname{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:15px;border-bottom:1px solid var(--line)}
+  .dishname .zh{font-size:17px;font-weight:650}
+  .dishname .en{color:var(--muted);font-size:13px}
+
+  .idle{color:var(--muted);font-size:14.5px;line-height:1.65}
+  .idle b{color:var(--text);font-weight:600}
+
+  /* --- timer --- */
+  .timer{margin-top:22px;display:none;align-items:center;gap:15px}
+  .timer.on{display:flex}
+  .ring{position:relative;width:74px;height:74px;flex:none}
+  .ring svg{transform:rotate(-90deg)}
+  .ring circle{fill:none;stroke-width:6;stroke-linecap:round}
+  .ring .bgc{stroke:var(--line)}
+  .ring .fgc{stroke:var(--sage);transition:stroke-dashoffset .95s linear}
+  .ring .num{
+    position:absolute;inset:0;display:grid;place-items:center;
+    font-size:15px;font-weight:650;font-variant-numeric:tabular-nums;
+  }
+  .timer .label{font-size:13.5px;color:var(--muted);line-height:1.5}
+  .timer .label b{display:block;color:var(--sage);font-size:12px;letter-spacing:.6px;text-transform:uppercase;margin-bottom:3px}
+  .timer.rang .ring .fgc{stroke:var(--accent)}
+  .timer.rang .label b{color:var(--accent)}
+
+  /* --- ingredients + step list --- */
+  .ing{display:flex;flex-wrap:wrap;gap:7px}
+  .ing span{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:999px;
+    padding:6px 12px;font-size:12.5px;
+  }
+  .ing span i{font-style:normal;color:var(--muted);margin-left:5px;font-size:11.5px}
+
+  .steps{list-style:none;margin:0;padding:0}
+  .steps li{
+    display:flex;gap:11px;padding:9px 0;font-size:13px;line-height:1.5;
+    color:var(--muted);border-bottom:1px solid rgba(51,44,40,.6);
+  }
+  .steps li:last-child{border-bottom:0}
+  .steps li .n{
+    flex:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);
+    display:grid;place-items:center;font-size:10.5px;margin-top:1px;
+  }
+  .steps li.now{color:var(--text)}
+  .steps li.now .n{background:var(--accent);border-color:var(--accent);color:#241503;font-weight:700}
+  .steps li.past{opacity:.45}
+  .steps li.past .n{background:var(--sage);border-color:var(--sage);color:#10240f}
+
+  /* --- transcript --- */
   .feed{
-    margin-top:26px;background:var(--panel);border:1px solid var(--line);
-    border-radius:var(--radius);padding:6px 0;min-height:88px;max-height:260px;overflow-y:auto;
+    margin-top:16px;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:6px 0;min-height:84px;max-height:230px;overflow-y:auto;
   }
   .feed:empty::after{
-    content:"Say something like 「燕麥奶 開兩瓶」";
-    display:block;padding:28px 20px;text-align:center;color:var(--muted);font-size:13px;
+    content:"Press the button, then just talk — try 「我想煮泡麵升級版」";
+    display:block;padding:27px 20px;text-align:center;color:var(--muted);font-size:13px;
   }
   .line{padding:9px 20px;font-size:13.5px;line-height:1.5;display:flex;gap:11px;align-items:flex-start}
-  .line .who{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.6px;color:var(--muted);padding-top:3px;width:44px}
+  .line .who{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.6px;color:var(--muted);padding-top:3px;width:50px}
   .line.you .who{color:var(--accent)}
   .line.partial{opacity:.5}
-  .line.act{color:var(--ok);font-size:12.5px}
+  .line.act{color:var(--sage);font-size:12.5px}
 
+  .err{
+    margin-top:14px;padding:12px 15px;border-radius:10px;font-size:13px;
+    background:rgba(224,112,90,.12);border:1px solid rgba(224,112,90,.4);color:#ffb9ac;
+  }
+  .err:empty{display:none}
+
+  /* --- bottom bar --- */
   .bar{
     position:fixed;left:0;right:0;bottom:0;
-    background:linear-gradient(transparent,var(--bg) 24%);
-    padding:26px 22px 24px;display:flex;justify-content:center;
+    background:linear-gradient(transparent,var(--bg) 26%);
+    padding:30px 22px 22px;display:flex;flex-direction:column;align-items:center;gap:13px;
   }
   button.mic{
     display:flex;align-items:center;gap:11px;
@@ -100,18 +156,21 @@
     font-family:var(--font);font-size:15px;font-weight:650;
     padding:15px 30px;border-radius:999px;cursor:pointer;
     transition:transform .15s,box-shadow .2s,background .2s;
-    box-shadow:0 8px 26px rgba(232,161,58,.24);
+    box-shadow:0 8px 28px rgba(232,161,58,.24);
   }
   button.mic:hover{transform:translateY(-1px)}
   button.mic:disabled{opacity:.55;cursor:default;transform:none}
-  button.mic.on{background:var(--low);color:#fff;box-shadow:0 8px 26px rgba(226,87,76,.26)}
+  button.mic.on{background:var(--warm);color:#fff;box-shadow:0 8px 28px rgba(224,112,90,.26)}
   button.mic svg{width:17px;height:17px}
 
-  .err{
-    margin-top:16px;padding:12px 15px;border-radius:10px;font-size:13px;
-    background:var(--low-soft);border:1px solid rgba(226,87,76,.4);color:#ffb3ad;
+  .settings{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--muted)}
+  .settings label{display:flex;align-items:center;gap:7px;cursor:pointer}
+  .settings select{
+    background:var(--panel-2);color:var(--text);border:1px solid var(--line);
+    border-radius:7px;padding:5px 8px;font-family:var(--font);font-size:12px;
   }
-  .err:empty{display:none}
+  .settings input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
+  .settings .off{opacity:.45;pointer-events:none}
 </style>
 </head>
 <body>
@@ -119,18 +178,40 @@
 
   <header>
     <div class="brand">
-      <div class="mark">YV</div>
+      <div class="mark">🍜</div>
       <div>
-        <h1>Daily Grind &mdash; inventory</h1>
-        <div class="sub"><span class="zhname">圓圓工作室</span> YuanYuan Voice Works &middot; speak, and the inventory updates</div>
+        <h1>YuanYuan AI &mdash; cook along with me</h1>
+        <div class="sub"><span class="zhname">圓圓</span> &middot; your hands are wet, and cooking alone is boring</div>
       </div>
     </div>
-    <div class="status"><span class="dot" id="dot"></span><span id="statusText">Not connected</span></div>
+    <div class="headright">
+      <div class="stage" id="stage"><span>Stage</span><b id="stageText">idle</b></div>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Not connected</span></div>
+    </div>
   </header>
 
-  <div class="shelf" id="shelf"></div>
-  <div class="err" id="err"></div>
-  <div class="feed" id="feed"></div>
+  <div class="grid">
+    <div>
+      <div class="card" id="stageCard">
+        <h2 id="stageCardTitle">Tonight</h2>
+        <div id="live"></div>
+        <div class="timer" id="timer">
+          <div class="ring">
+            <svg width="74" height="74"><circle class="bgc" cx="37" cy="37" r="32"></circle><circle class="fgc" id="ringFg" cx="37" cy="37" r="32"></circle></svg>
+            <div class="num" id="ringNum">0:00</div>
+          </div>
+          <div class="label"><b id="timerState">Waiting</b><span id="timerLabel"></span></div>
+        </div>
+      </div>
+      <div class="err" id="err"></div>
+      <div class="feed" id="feed"></div>
+    </div>
+
+    <div class="card" id="side">
+      <h2>Recipe book</h2>
+      <div id="sideBody"></div>
+    </div>
+  </div>
 
 </div>
 
@@ -142,82 +223,227 @@
     </svg>
     <span id="micLabel">Start talking</span>
   </button>
+  <div class="settings" id="settings">
+    <label>Replies in
+      <select id="langSel">
+        <option value="en">English</option>
+        <option value="zh">繁體中文</option>
+      </select>
+    </label>
+    <label title="Experimental: lets the agent speak first when a timer ends. Verify against the API before filming.">
+      <input type="checkbox" id="nudgeChk" />
+      Speak first when a timer ends <span style="opacity:.6">(experimental)</span>
+    </label>
+  </div>
 </div>
 
 <script>
 /* ---------------------------------------------------------------
-   YuanYuan Voice Works
-   A voice inventory assistant for a chain cafe counter.
+   YuanYuan AI — a voice companion that cooks with you.
+
+   Your hands are wet or greasy, so voice is the only channel left.
+   And a recipe is mostly waiting — that dead time is what this is for.
+
    One WebSocket to AssemblyAI's Voice Agent API carries speech in,
-   speech out, and the tool calls that move the stock.
+   speech out, turn detection, and the tool calls that move the recipe.
    --------------------------------------------------------------- */
 
-const AGENT_WS = "wss://agents.assemblyai.com/v1/ws";
+const AGENT_WS      = "wss://agents.assemblyai.com/v1/ws";
 const TOKEN_ENDPOINT = "/api/voice-token";
-const SAMPLE_RATE = 24000;          // the Voice Agent API speaks PCM16 @ 24 kHz
-const CHUNK_MS = 50;
+const SAMPLE_RATE   = 24000;   // the Voice Agent API speaks PCM16 @ 24 kHz
+const CHUNK_MS      = 50;
 
-/* ---- the shelf ------------------------------------------------ */
+/* ---- the recipe book ------------------------------------------
+   Three recipes, hand-written. The point of this project is the
+   companion, not the corpus — a thousand recipes would not make the
+   kitchen any less lonely.
+   --------------------------------------------------------------- */
 
-const DEFAULT_STOCK = [
-  { id:"oat_milk",       zh:"燕麥奶",     en:"Oat milk",       unit:"1L bottles",  qty:12, par:6 },
-  { id:"whole_milk",     zh:"鮮奶",       en:"Whole milk",     unit:"2L bottles",  qty:20, par:8 },
-  { id:"vanilla_syrup",  zh:"香草糖漿",   en:"Vanilla syrup",  unit:"750ml bottles", qty:3,  par:6 },
-  { id:"espresso_beans", zh:"濃縮豆",     en:"Espresso beans", unit:"1kg bags",    qty:8,  par:4 },
-  { id:"cups_16oz",      zh:"16 盎司杯",  en:"16oz cups",      unit:"sleeves",     qty:6,  par:4 },
-  { id:"sealing_film",   zh:"封膜",       en:"Sealing film",   unit:"rolls",       qty:4,  par:2 },
+const RECIPES = [
+  {
+    id:"noodles",
+    zh:"泡麵升級版", en:"Upgraded Instant Noodles",
+    minutes:12,
+    blurb:"The one you already know, made worth sitting down for.",
+    keys:["泡麵","麵","雞蛋","蛋","青菜","蔥","辣油","noodle","noodles","egg","greens","scallion","instant"],
+    ingredients:[
+      { zh:"泡麵",   en:"1 pack instant noodles" },
+      { zh:"雞蛋",   en:"1 egg" },
+      { zh:"青菜",   en:"A handful of leafy greens" },
+      { zh:"蔥花",   en:"Chopped scallion" },
+      { zh:"辣油",   en:"A spoon of chilli crisp" }
+    ],
+    steps:[
+      { text:"Pour 500ml of water into a small pot, lid on, high heat.", wait:180, label:"Water coming to a boil" },
+      { text:"Water's up. Drop the noodle block in and leave it alone — no seasoning yet.", wait:90, label:"Noodles softening" },
+      { text:"Crack the egg straight onto the noodles. Don't stir it, let it set.", wait:60, label:"Egg setting" },
+      { text:"Now the sachets — but only half the oil packet. Trust me on that one." },
+      { text:"Greens in, then kill the heat. They'll cook in the heat that's left.", wait:30, label:"Greens wilting" },
+      { text:"Into a bowl. Scallion on top, a spoon of chilli crisp. That's dinner." }
+    ]
+  },
+  {
+    id:"tomato_egg",
+    zh:"番茄炒蛋", en:"Tomato Egg Stir-fry",
+    minutes:15,
+    blurb:"The dish every kitchen in Taiwan can make blindfolded.",
+    keys:["番茄","蕃茄","雞蛋","蛋","蔥","糖","鹽","tomato","tomatoes","egg","eggs","sugar","scallion"],
+    ingredients:[
+      { zh:"番茄",   en:"2 tomatoes, in wedges" },
+      { zh:"雞蛋",   en:"3 eggs" },
+      { zh:"蔥花",   en:"Chopped scallion" },
+      { zh:"糖",     en:"A pinch of sugar" },
+      { zh:"鹽",     en:"Salt" }
+    ],
+    steps:[
+      { text:"Beat three eggs with a pinch of salt until it's all one colour." },
+      { text:"Hot pan, generous oil. Egg in, push it around until it's just set, then take it straight out." },
+      { text:"Same pan, tomato wedges in. Don't touch them — let them collapse on their own.", wait:120, label:"Tomatoes breaking down" },
+      { text:"A pinch of sugar now. That's the trick — it takes the sourness off." },
+      { text:"Egg back in, fold it through twice, scallion on top, off the heat." }
+    ]
+  },
+  {
+    id:"garlic_rice",
+    zh:"蒜香奶油炒飯", en:"Garlic Butter Fried Rice",
+    minutes:10,
+    blurb:"Yesterday's rice, and four cloves of garlic doing all the work.",
+    keys:["飯","冷飯","白飯","蒜","蒜頭","奶油","醬油","蔥","蛋","雞蛋","rice","garlic","butter","soy","scallion","egg"],
+    ingredients:[
+      { zh:"冷飯",   en:"2 bowls day-old rice" },
+      { zh:"蒜頭",   en:"4 cloves garlic, chopped" },
+      { zh:"奶油",   en:"A big knob of butter" },
+      { zh:"醬油",   en:"Soy sauce" },
+      { zh:"雞蛋",   en:"1 egg" },
+      { zh:"蔥花",   en:"Chopped scallion" }
+    ],
+    steps:[
+      { text:"Melt a big knob of butter on medium heat, then slide the chopped garlic in.", wait:60, label:"Garlic going golden" },
+      { text:"Garlic's golden — rice in. Break every clump with the back of the spoon.", wait:90, label:"Rice frying" },
+      { text:"Push the rice to one side, crack the egg into the gap, scramble it there, then mix it through." },
+      { text:"Soy sauce down the hot side of the pan, not onto the rice. You'll hear it." },
+      { text:"Scallion, one last toss, and it's done." }
+    ]
+  }
 ];
 
-const STORE_KEY = "yvw.stock.v1";
+/* ---- state ----------------------------------------------------- */
 
-function loadStock(){
+const STORE_KEY = "yuanyuan.cook.v2";
+
+let stage    = "idle";     // idle | picking | cooking | waiting | done
+let recipe   = null;
+let stepIdx  = -1;
+let matched  = [];         // ids highlighted by suggest_dishes
+
+function saveState(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify({ id: recipe && recipe.id, stepIdx }));
+  }catch(e){ /* private mode — the screen is still correct */ }
+}
+function loadState(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
-    if(raw){
-      const saved = JSON.parse(raw);
-      return DEFAULT_STOCK.map(d => ({ ...d, qty: saved[d.id] ?? d.qty }));
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    const r = RECIPES.find(x => x.id === s.id);
+    if(r && s.stepIdx >= 0 && s.stepIdx < r.steps.length){
+      recipe = r; stepIdx = s.stepIdx; stage = "cooking";
     }
-  }catch(e){ /* private mode, blocked storage — fall through to defaults */ }
-  return DEFAULT_STOCK.map(d => ({ ...d }));
+  }catch(e){ /* fall through to a clean start */ }
 }
 
-function saveStock(){
-  try{
-    const out = {};
-    stock.forEach(i => out[i.id] = i.qty);
-    localStorage.setItem(STORE_KEY, JSON.stringify(out));
-  }catch(e){ /* nothing to do — the screen is still correct */ }
+/* ---- elements --------------------------------------------------- */
+
+const liveEl      = document.getElementById("live");
+const sideBodyEl  = document.getElementById("sideBody");
+const sideEl      = document.getElementById("side");
+const stageCardT  = document.getElementById("stageCardTitle");
+const feedEl      = document.getElementById("feed");
+const errEl       = document.getElementById("err");
+const dotEl       = document.getElementById("dot");
+const statusEl    = document.getElementById("statusText");
+const stageEl     = document.getElementById("stage");
+const stageTextEl = document.getElementById("stageText");
+const micBtn      = document.getElementById("micBtn");
+const micLabel    = document.getElementById("micLabel");
+const timerEl     = document.getElementById("timer");
+const ringFg      = document.getElementById("ringFg");
+const ringNum     = document.getElementById("ringNum");
+const timerLabel  = document.getElementById("timerLabel");
+const timerState  = document.getElementById("timerState");
+const langSel     = document.getElementById("langSel");
+const nudgeChk    = document.getElementById("nudgeChk");
+const settingsEl  = document.getElementById("settings");
+
+const RING_LEN = 2 * Math.PI * 32;
+ringFg.style.strokeDasharray = RING_LEN;
+ringFg.style.strokeDashoffset = RING_LEN;
+
+/* ---- rendering -------------------------------------------------- */
+
+function setStage(s){
+  stage = s;
+  stageEl.className = "stage " + s;
+  stageTextEl.textContent = s;
+  render();
 }
 
-let stock = loadStock();
-
-/* ---- rendering ------------------------------------------------ */
-
-const shelfEl  = document.getElementById("shelf");
-const feedEl   = document.getElementById("feed");
-const errEl    = document.getElementById("err");
-const dotEl    = document.getElementById("dot");
-const statusEl = document.getElementById("statusText");
-const micBtn   = document.getElementById("micBtn");
-const micLabel = document.getElementById("micLabel");
-
-function renderShelf(){
-  shelfEl.innerHTML = stock.map(i => `
-    <div class="item ${i.qty <= i.par ? "low" : ""}" data-id="${i.id}">
-      ${i.qty <= i.par ? '<span class="badge">LOW</span>' : ""}
-      <div class="zh">${i.zh}</div>
-      <div class="en">${i.en}</div>
-      <div class="qty"><b>${i.qty}</b><span>${i.unit}</span></div>
-      <div class="par">par ${i.par}</div>
-    </div>`).join("");
+function render(){
+  renderLive();
+  renderSide();
 }
 
-function flash(id){
-  const el = shelfEl.querySelector(`[data-id="${id}"]`);
-  if(!el) return;
-  el.classList.remove("flash");
-  void el.offsetWidth;
-  el.classList.add("flash");
+function renderLive(){
+  if(!recipe){
+    stageCardT.textContent = "Tonight";
+    liveEl.innerHTML = `
+      <div class="idle">
+        Tell me <b>what you feel like eating</b> — or just read out what's in the fridge
+        and I'll find something.<br><br>
+        Then keep your hands where they are. I'll walk you through it one step at a time,
+        and I'll stay on the line while things cook.
+      </div>`;
+    return;
+  }
+  const done = stepIdx >= recipe.steps.length;
+  stageCardT.textContent = done ? "Finished" : "Right now";
+  const head = `
+    <div class="dishname">
+      <span class="zh">${recipe.zh}</span>
+      <span class="en">${recipe.en}</span>
+    </div>`;
+  if(done){
+    liveEl.innerHTML = head + `
+      <div class="stepnum">DONE</div>
+      <div class="steptext">Sit down and eat it while it's hot. I'll be here.</div>`;
+    return;
+  }
+  liveEl.innerHTML = head + `
+    <div class="stepnum">STEP ${stepIdx + 1} OF ${recipe.steps.length}</div>
+    <div class="steptext">${recipe.steps[stepIdx].text}</div>`;
+}
+
+function renderSide(){
+  if(!recipe){
+    sideEl.querySelector("h2").textContent = "Recipe book";
+    sideBodyEl.innerHTML = `<div class="menu">` + RECIPES.map(r => `
+      <div class="dish ${matched.includes(r.id) ? "hit" : ""}">
+        <div class="zh">${r.zh}</div>
+        <div class="en">${r.en}</div>
+        <div class="meta">${r.minutes} min &middot; ${r.blurb}</div>
+      </div>`).join("") + `</div>`;
+    return;
+  }
+  sideEl.querySelector("h2").textContent = "What you need";
+  sideBodyEl.innerHTML = `
+    <div class="ing">${recipe.ingredients.map(i => `<span>${i.zh}<i>${i.en}</i></span>`).join("")}</div>
+    <h2 style="margin:20px 0 10px">The whole way through</h2>
+    <ul class="steps">${recipe.steps.map((s,i) => `
+      <li class="${i === stepIdx ? "now" : (i < stepIdx ? "past" : "")}">
+        <span class="n">${i < stepIdx ? "&#10003;" : i + 1}</span>
+        <span>${s.text}</span>
+      </li>`).join("")}</ul>`;
 }
 
 function say(who, text, cls){
@@ -241,14 +467,12 @@ function commitPartial(text){
     partialLine.classList.remove("partial");
     partialLine.querySelector(".txt").textContent = text;
     partialLine = null;
-  } else {
-    say("YOU", text, "you");
-  }
+  } else say("YOU", text, "you");
 }
 
 let agentLine = null, agentBuf = "";
 function showAgentPartial(text){
-  if(!agentLine) agentLine = say("AGENT", text, "partial");
+  if(!agentLine) agentLine = say("圓圓", text, "partial");
   else agentLine.querySelector(".txt").textContent = text;
   feedEl.scrollTop = feedEl.scrollHeight;
 }
@@ -257,9 +481,7 @@ function commitAgent(text){
     agentLine.classList.remove("partial");
     agentLine.querySelector(".txt").textContent = text;
     agentLine = null;
-  } else if(text){
-    say("AGENT", text);
-  }
+  } else if(text) say("圓圓", text);
   agentBuf = "";
 }
 
@@ -269,136 +491,269 @@ function setStatus(text, state){
 }
 function showError(msg){ errEl.textContent = msg; }
 
-renderShelf();
+/* ---- the timer --------------------------------------------------
+   Waiting is not dead time in this app — it is the feature. The ring
+   is only the visible half; the other half is the agent staying on the
+   line and talking to you while it runs.
+   ----------------------------------------------------------------- */
 
-/* ---- the three things it can do ------------------------------- */
+let timerId = null, timerEnd = 0, timerTotal = 0;
 
-function findItem(name){
+function startTimer(seconds, label){
+  clearTimer();
+  timerTotal = Math.max(1, Math.round(seconds));
+  timerEnd = Date.now() + timerTotal * 1000;
+  timerLabel.textContent = label || "";
+  timerState.textContent = "Waiting";
+  timerEl.classList.add("on");
+  timerEl.classList.remove("rang");
+  tickTimer();
+  timerId = setInterval(tickTimer, 250);
+  setStage("waiting");
+}
+
+function tickTimer(){
+  const left = Math.max(0, Math.round((timerEnd - Date.now()) / 1000));
+  const m = Math.floor(left / 60), s = left % 60;
+  ringNum.textContent = m + ":" + String(s).padStart(2, "0");
+  ringFg.style.strokeDashoffset = RING_LEN * (1 - left / timerTotal);
+  if(left <= 0) ringTimer();
+}
+
+function ringTimer(){
+  clearInterval(timerId); timerId = null;
+  timerEl.classList.add("rang");
+  timerState.textContent = "Time's up";
+  chime();
+  say("TIMER", (timerLabel.textContent || "Timer") + " — done", "act");
+  if(stage === "waiting") setStage("cooking");
+  // Experimental: let the agent speak first. Unverified against the API,
+  // so it is off unless the person ticks the box.
+  if(nudgeChk.checked) nudge("[the timer just went off: " + (timerLabel.textContent || "timer") + "]");
+}
+
+function clearTimer(){
+  if(timerId){ clearInterval(timerId); timerId = null; }
+  timerEl.classList.remove("on","rang");
+}
+
+function chime(){
+  try{
+    const c = new AudioContext();
+    [880, 1174].forEach((f, i) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      o.connect(g); g.connect(c.destination);
+      const t = c.currentTime + i * 0.18;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.start(t); o.stop(t + 0.55);
+    });
+    setTimeout(() => c.close(), 1500);
+  }catch(e){ /* no audio context — the ring already went orange */ }
+}
+
+/* ---- the five things it can do ---------------------------------- */
+
+function findRecipe(name){
   if(!name) return null;
   const q = String(name).toLowerCase().trim();
-  return stock.find(i =>
-    i.id === q ||
-    i.zh === name ||
-    i.en.toLowerCase() === q ||
-    i.en.toLowerCase().includes(q) ||
-    i.zh.includes(name)
+  return RECIPES.find(r =>
+    r.id === q || r.zh === name || r.en.toLowerCase() === q ||
+    r.en.toLowerCase().includes(q) || r.zh.includes(name) ||
+    q.includes(r.en.toLowerCase())
   ) || null;
 }
 
-function stockReport(i){
+function stepPayload(){
+  if(!recipe) return { error:"No recipe started yet. Call start_recipe first." };
+  if(stepIdx >= recipe.steps.length){
+    return { finished:true, dish:recipe.en, message:"All steps are done." };
+  }
+  const s = recipe.steps[stepIdx];
   return {
-    item: i.en, quantity: i.qty, unit: i.unit,
-    par_level: i.par, below_par: i.qty <= i.par
+    dish: recipe.en,
+    step_number: stepIdx + 1,
+    of: recipe.steps.length,
+    instruction: s.text,
+    timer_running: !!s.wait,
+    timer_seconds: s.wait || 0,
+    stage
   };
 }
 
 const TOOLS = {
-  deduct_stock({ item, quantity }){
-    const it = findItem(item);
-    if(!it) return { error: `No item called "${item}" on this shelf.` };
-    const n = Math.abs(Number(quantity) || 0);
-    if(!n) return { error: "Quantity missing." };
-    if(n > it.qty) return { error:`Only ${it.qty} ${it.unit} of ${it.en} left — cannot take ${n}.`, ...stockReport(it) };
-    it.qty -= n;
-    afterChange(it);
-    say("STOCK", `− ${n} ${it.en} → ${it.qty} left`, "act");
-    return stockReport(it);
+  suggest_dishes({ have }){
+    const list = Array.isArray(have) ? have : String(have || "").split(/[,、\s]+/);
+    const words = list.map(x => String(x).toLowerCase().trim()).filter(Boolean);
+    const scored = RECIPES.map(r => {
+      const hits = r.keys.filter(k => words.some(w => w.includes(k.toLowerCase()) || k.toLowerCase().includes(w)));
+      return { r, score: new Set(hits).size };
+    }).filter(x => x.score > 0).sort((a,b) => b.score - a.score).slice(0,3);
+
+    matched = scored.map(x => x.r.id);
+    setStage("picking");
+
+    if(!scored.length){
+      return { matches: [], message: "Nothing in the book matches that. Offer the three dishes by name instead.", book: RECIPES.map(r => r.en) };
+    }
+    say("MATCH", scored.map(x => x.r.en).join(", "), "act");
+    return {
+      matches: scored.map(x => ({
+        dish: x.r.en, dish_zh: x.r.zh, minutes: x.r.minutes,
+        needs: x.r.ingredients.map(i => i.en)
+      }))
+    };
   },
-  add_stock({ item, quantity }){
-    const it = findItem(item);
-    if(!it) return { error: `No item called "${item}" on this shelf.` };
-    const n = Math.abs(Number(quantity) || 0);
-    if(!n) return { error: "Quantity missing." };
-    it.qty += n;
-    afterChange(it);
-    say("STOCK", `+ ${n} ${it.en} → ${it.qty} on hand`, "act");
-    return stockReport(it);
+
+  start_recipe({ dish }){
+    const r = findRecipe(dish);
+    if(!r) return { error:`I don't know "${dish}". The book has: ` + RECIPES.map(x => x.en).join(", ") };
+    recipe = r; stepIdx = 0; matched = [];
+    clearTimer();
+    setStage("cooking");
+    saveState();
+    say("RECIPE", r.en + " — " + r.steps.length + " steps", "act");
+    const first = recipe.steps[0];
+    if(first.wait) startTimer(first.wait, first.label);
+    return {
+      dish: r.en, dish_zh: r.zh, total_steps: r.steps.length,
+      ingredients: r.ingredients.map(i => i.en),
+      ...stepPayload()
+    };
   },
-  check_stock({ item }){
-    const it = findItem(item);
-    if(!it) return { error: `No item called "${item}" on this shelf.` };
-    return stockReport(it);
+
+  next_step(){
+    if(!recipe) return { error:"Nothing is cooking yet. Ask what they want to make." };
+    if(stepIdx >= recipe.steps.length) return { finished:true, message:"Already finished." };
+    stepIdx += 1;
+    saveState();
+    if(stepIdx >= recipe.steps.length){
+      clearTimer();
+      setStage("done");
+      say("RECIPE", recipe.en + " — finished", "act");
+      return { finished:true, dish:recipe.en, message:"That was the last step. Tell them it's ready, briefly." };
+    }
+    const s = recipe.steps[stepIdx];
+    clearTimer();
+    if(s.wait) startTimer(s.wait, s.label);
+    else setStage("cooking");
+    return stepPayload();
+  },
+
+  repeat_step(){ return stepPayload(); },
+
+  set_timer({ seconds, label }){
+    const n = Math.round(Number(seconds) || 0);
+    if(!n || n < 1) return { error:"How long? Ask them for a number." };
+    if(n > 3600) return { error:"That is longer than an hour — check the number with them." };
+    startTimer(n, label || "Timer");
+    return { timer_running:true, seconds:n, label: label || "Timer", stage };
   }
 };
 
-function afterChange(it){
-  saveStock();
-  renderShelf();
-  flash(it.id);
-}
-
 const TOOL_SCHEMA = [
   {
-    type:"function",
-    name:"deduct_stock",
-    description:"Take stock off the shelf when the barista opens, uses or throws away an item.",
-    parameters:{
-      type:"object",
-      properties:{
-        item:{ type:"string", description:"Item name, in Mandarin or English, e.g. 燕麥奶 or oat milk" },
-        quantity:{ type:"number", description:"How many units to remove" }
-      },
-      required:["item","quantity"]
-    }
+    type:"function", name:"suggest_dishes",
+    description:"Match what the person has in the fridge against the recipe book. Call this when they list ingredients instead of naming a dish.",
+    parameters:{ type:"object", properties:{
+      have:{ type:"array", items:{ type:"string" }, description:"Ingredients they said they have, in Mandarin or English, e.g. ['雞蛋','番茄']" }
+    }, required:["have"] }
   },
   {
-    type:"function",
-    name:"add_stock",
-    description:"Add stock when a delivery arrives or the barista restocks the counter.",
-    parameters:{
-      type:"object",
-      properties:{
-        item:{ type:"string", description:"Item name, in Mandarin or English" },
-        quantity:{ type:"number", description:"How many units arrived" }
-      },
-      required:["item","quantity"]
-    }
+    type:"function", name:"start_recipe",
+    description:"Begin cooking a dish. Loads the ingredients and puts step one on screen. Call this as soon as they have chosen.",
+    parameters:{ type:"object", properties:{
+      dish:{ type:"string", description:"Dish name, in Mandarin or English, e.g. 泡麵升級版 or upgraded instant noodles" }
+    }, required:["dish"] }
   },
   {
-    type:"function",
-    name:"check_stock",
-    description:"Look up how much of one item is on hand right now, and whether it is below par.",
-    parameters:{
-      type:"object",
-      properties:{
-        item:{ type:"string", description:"Item name, in Mandarin or English" }
-      },
-      required:["item"]
-    }
+    type:"function", name:"next_step",
+    description:"Move to the next step. Call this only when they say they are done with the current one. Starts that step's timer automatically if it has one.",
+    parameters:{ type:"object", properties:{} }
+  },
+  {
+    type:"function", name:"repeat_step",
+    description:"Get the current step again, word for word, when they missed it or ask where they are.",
+    parameters:{ type:"object", properties:{} }
+  },
+  {
+    type:"function", name:"set_timer",
+    description:"Start a timer they asked for by hand, on top of the recipe's own timers.",
+    parameters:{ type:"object", properties:{
+      seconds:{ type:"number", description:"How many seconds" },
+      label:{ type:"string", description:"Short label, e.g. 'Noodles'" }
+    }, required:["seconds"] }
   }
 ];
 
-const SYSTEM_PROMPT = `You are the stock assistant at the counter of a Daily Grind cafe.
-The barista talks to you in Mandarin while their hands are busy; you always answer in English, briefly.
+/* ---- who the agent is -------------------------------------------
+   The four stages are the whole idea. The tone is not one flat prompt;
+   every tool call hands back a stage, and the stage rewrites the mood.
+   ----------------------------------------------------------------- */
+
+function systemPrompt(lang){
+  const replyRule = lang === "zh"
+    ? "- Answer in Traditional Chinese, in one or two short sentences. Never read a whole recipe out at once."
+    : "- Answer in English, in one or two short sentences, even when they speak Mandarin to you. Never read a whole recipe out at once.";
+
+  return `You are 圓圓 (YuanYuan), a friend who cooks along with one person in their kitchen at home.
+Their hands are wet or greasy, so your voice is the only way they can reach you.
+You are here for company first and instructions second. Cooking alone is boring — you are the friend leaning on the counter.
+
+Your tone follows the stage that the tools hand back:
+- picking: warm and easy. Two options at most. If they list what is in the fridge, call suggest_dishes.
+- cooking: calm and steady. One step, then stop talking and let them work.
+- waiting: a timer is running and their hands are free. This is what you are for — talk to them.
+  Ask about their day, tell a small story about food, react to what they say.
+  Do NOT push them back to the recipe, and do NOT announce the countdown.
+- done: proud of them for a sentence, then get out of the way.
 
 Rules:
-- Keep every reply under 15 words. The barista is mid-service.
-- When they say they used, opened or wasted something, call deduct_stock.
-- When a delivery arrives or they restock, call add_stock.
-- When they ask how much is left, call check_stock.
-- After a tool runs, state the new number out loud, e.g. "Two oat milk out, ten left."
-- If below_par is true, add a short warning, e.g. "That's below par, worth reordering."
-- If you did not clearly hear the item or the number, do NOT guess. Ask one short question:
-  "Two bottles or twelve?" Confirm before you change anything.
-- Never invent items. The shelf holds only: oat milk, whole milk, vanilla syrup,
-  espresso beans, 16oz cups, sealing film.`;
+${replyRule}
+- To move forward, call next_step — and only when they say they have finished the current step.
+- Never recite a step you did not get back from a tool. You do not know any recipe by heart.
+- If they missed something, call repeat_step.
+- If they ask you to time something, call set_timer.
+- If you did not catch the dish or the number, ask one short question instead of guessing.
+- Never invent a dish. You only know what the tools give you.`;
+}
+
+const GREETING = {
+  en: "Hey, I'm here. What are we making?",
+  zh: "我在喔，今天想煮什麼？"
+};
 
 const KEYTERMS = [
-  "燕麥奶","鮮奶","香草糖漿","濃縮豆","封膜","盎司杯","開兩瓶","進貨","還剩幾瓶",
-  "oat milk","whole milk","vanilla syrup","espresso beans","sealing film","16oz cups",
-  "Daily Grind","par level"
+  "泡麵","泡麵升級版","番茄炒蛋","炒飯","蒜香奶油炒飯",
+  "雞蛋","番茄","青菜","蔥花","辣油","蒜頭","奶油","醬油","冷飯",
+  "下一步","好了","再講一次","沒聽到","計時","幾分鐘","水滾了","關火","可以了嗎",
+  "upgraded instant noodles","tomato egg","garlic butter fried rice",
+  "next step","say that again","set a timer"
 ];
 
-/* ---- the voice session ---------------------------------------- */
+/* ---- the voice session ------------------------------------------- */
 
 let ws = null, audioCtx = null, micStream = null, workletNode = null, sourceNode = null;
 let playCtx = null, playHead = 0;
 let running = false;
 
+function nudge(text){
+  // Unverified message shape — this is the one thing left to test against
+  // the live API. Guarded so a rejection can never break a demo.
+  try{
+    if(ws && ws.readyState === WebSocket.OPEN){
+      ws.send(JSON.stringify({ type:"input.text", text }));
+    }
+  }catch(e){ /* if the API does not take it, the chime already covered us */ }
+}
+
 async function start(){
   showError("");
   setStatus("Connecting…", "connecting");
   micBtn.disabled = true;
+  settingsEl.classList.add("off");
 
   let token;
   try{
@@ -408,6 +763,7 @@ async function start(){
     if(!token) throw new Error("token endpoint returned no token");
   }catch(e){
     micBtn.disabled = false;
+    settingsEl.classList.remove("off");
     setStatus("Not connected");
     showError(`Could not get a session token — ${e.message}. Is ASSEMBLYAI_API_KEY set on the deployment?`);
     return;
@@ -419,11 +775,13 @@ async function start(){
     });
   }catch(e){
     micBtn.disabled = false;
+    settingsEl.classList.remove("off");
     setStatus("Not connected");
     showError("Microphone permission denied — the browser needs it to hear you.");
     return;
   }
 
+  const lang = langSel.value;
   const url = new URL(AGENT_WS);
   url.searchParams.set("token", token);
   ws = new WebSocket(url);
@@ -432,12 +790,14 @@ async function start(){
     ws.send(JSON.stringify({
       type:"session.update",
       session:{
-        system_prompt: SYSTEM_PROMPT,
-        greeting: "Counter stock is up. What did you use?",
+        system_prompt: systemPrompt(lang),
+        greeting: GREETING[lang],
         input:{
           format:{ encoding:"audio/pcm" },
           keyterms: KEYTERMS,
-          turn_detection:{ vad_threshold:0.5, min_silence:400, max_silence:1200, interrupt_response:true }
+          // interrupt_response is the kitchen feature: cut it off mid-sentence
+          // with your hands full, no button.
+          turn_detection:{ vad_threshold:0.5, min_silence:500, max_silence:1400, interrupt_response:true }
         },
         output:{ voice:"anna", format:{ encoding:"audio/pcm" } },
         tools: TOOL_SCHEMA
@@ -456,6 +816,7 @@ async function start(){
         micBtn.classList.add("on");
         micLabel.textContent = "Stop";
         setStatus("Listening", "live");
+        if(stage === "idle") setStage("picking");
         await openMic();
         break;
 
@@ -572,10 +933,10 @@ function toBase64(arrayBuffer){
   return btoa(s);
 }
 
-/* ---- playback -------------------------------------------------
+/* ---- playback ----------------------------------------------------
    Agent audio is written straight into the AudioContext timeline.
    Sleep-based scheduling drifts and clicks; a running playhead does not.
-   --------------------------------------------------------------- */
+   ------------------------------------------------------------------ */
 
 function playChunk(b64){
   if(!b64) return;
@@ -609,9 +970,9 @@ function stopPlayback(){
   playHead = 0;
 }
 
-/* ---- teardown -------------------------------------------------
+/* ---- teardown ----------------------------------------------------
    An abandoned session keeps billing until the cap, so always end it.
-   --------------------------------------------------------------- */
+   ------------------------------------------------------------------ */
 
 function stop(){
   running = false;
@@ -628,12 +989,16 @@ function stop(){
 
   micBtn.disabled = false;
   micBtn.classList.remove("on");
+  settingsEl.classList.remove("off");
   micLabel.textContent = "Start talking";
   setStatus("Not connected");
 }
 
 micBtn.addEventListener("click", () => running ? stop() : start());
 window.addEventListener("beforeunload", () => { if(running) stop(); });
+
+loadState();
+setStage(stage);
 </script>
 </body>
 </html>
