@@ -37,6 +37,15 @@
   .pill{display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);
     padding:7px 13px;border-radius:999px;font-size:12px;color:var(--muted)}
   .dot{width:8px;height:8px;border-radius:50%;background:#5a504a;flex:none;transition:background .2s}
+  .turn{display:flex;align-items:center;gap:9px;padding:8px 17px;border-radius:999px;font-size:13px;
+    font-weight:650;border:1px solid transparent;transition:background .25s,border-color .25s,color .25s}
+  .turn[hidden]{display:none}
+  .turn .ring{width:9px;height:9px;border-radius:50%;flex:none}
+  .turn .zh{font-weight:400;opacity:.7;font-size:12px}
+  .turn.you{background:rgba(143,185,138,.13);border-color:rgba(143,185,138,.42);color:var(--sage)}
+  .turn.you .ring{background:var(--sage)}
+  .turn.agent{background:rgba(232,161,58,.13);border-color:rgba(232,161,58,.42);color:var(--accent)}
+  .turn.agent .ring{background:var(--accent);animation:pulse .9s infinite}
   .dot.live{background:var(--sage);box-shadow:0 0 0 4px rgba(143,185,138,.16)}
   .dot.connecting{background:var(--accent);animation:pulse 1s infinite}
   @keyframes pulse{50%{opacity:.35}}
@@ -162,6 +171,7 @@
 </div>
 
 <div class="bar">
+  <div class="turn" id="turn" hidden><span class="ring"></span><b id="turnText"></b><span class="zh" id="turnZh"></span></div>
   <button class="mic" id="micBtn">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
@@ -184,7 +194,7 @@
   </div>
 </div>
 
-<div class="build">build 6 · 09-10</div>
+<div class="build">build 7 · 09-10</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -453,6 +463,21 @@ function setStatus(text, state){
 }
 function showError(msg){ errEl.textContent = msg; }
 
+/* Whose turn it is. On speakers the microphone is closed while the agent
+   speaks — there is no way to know that from the outside, so say it out loud
+   on screen. Not knowing was why half of what they said went missing. */
+function setTurn(who){
+  const el = document.getElementById("turn");
+  if(!who){ el.hidden = true; return; }
+  el.hidden = false;
+  el.className = "turn " + who;
+  document.getElementById("turnText").textContent =
+    who === "agent" ? "YuanYuan is speaking" : "Your turn";
+  document.getElementById("turnZh").textContent =
+    who === "agent" ? (headphones ? "圓圓說話中" : "圓圓說話中 · 麥克風暫停")
+                    : "輪到你了 · 慢慢講，停頓沒關係";
+}
+
 /* ---- the timer --------------------------------------------------
    Waiting is the feature, not dead air. When it ends the agent speaks
    first — that is the whole product, so it is not optional.
@@ -663,6 +688,13 @@ Your tone follows the stage that the tools hand back:
   story about food, react to what they say. Do NOT announce the countdown, do NOT push them on.
 - done: proud of them for a sentence, then get out of the way.
 
+IF YOU ONLY CAUGHT HALF A SENTENCE:
+Their hands are busy and they pause to think, so what reaches you is sometimes a fragment —
+"I want to", "let me see", "can we", a single stray word. A fragment names no dish, no
+ingredient, and asks nothing. Do NOT answer it and do NOT guess what was coming. Say one
+short sound — "Mm-hm?" — and stop immediately. They are still talking; the rest of the
+sentence is on its way, and every second you spend talking is a second they cannot reach you.
+
 THE MOMENT THEY NAME A DISH:
 Call start_recipe straight away. Do not answer "great, let's get started" and stop — a turn
 that ends without a step in it leaves them standing in the kitchen with nothing to do.
@@ -713,14 +745,18 @@ let running = false;
    stop sending microphone frames while its voice is playing. */
 let agentSpeaking = false, gateTimer = null, headphones = false;
 
-function agentAudioStart(){ if(headphones) return; agentSpeaking = true; clearTimeout(gateTimer); }
-function agentAudioEndsSoon(){
+function agentAudioStart(){
+  setTurn("agent");
   if(headphones) return;
+  agentSpeaking = true; clearTimeout(gateTimer);
+}
+function agentAudioEndsSoon(){
+  if(headphones){ setTurn("you"); return; }
   const remainMs = playCtx ? Math.max(0, (playHead - playCtx.currentTime) * 1000) : 0;
   clearTimeout(gateTimer);
-  gateTimer = setTimeout(() => { agentSpeaking = false; }, remainMs + 350);
+  gateTimer = setTimeout(() => { agentSpeaking = false; setTurn("you"); }, remainMs + 350);
 }
-function openGate(){ clearTimeout(gateTimer); agentSpeaking = false; }
+function openGate(){ clearTimeout(gateTimer); agentSpeaking = false; setTurn("you"); }
 
 /* Waking it up when a timer ends. The message shape is the one thing here
    not confirmed against the API, so if it is refused we put the refusal on
@@ -784,7 +820,10 @@ async function start(){
           format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE },
           keyterms: KEYTERMS,
           // Barge-in needs headphones — on speakers it would interrupt itself.
-          turn_detection:{ vad_threshold:0.5, min_silence:500, max_silence:1400, interrupt_response: headphones }
+          // Cooking Mandarin has pauses in it. 500 ms cut people off mid-sentence,
+          // and the moment the agent starts talking the microphone closes — so the
+          // rest of what they were saying never arrived. Give them room to think.
+          turn_detection:{ vad_threshold:0.6, min_silence:1000, max_silence:2200, interrupt_response: headphones }
         },
         output:{ voice:"anna", format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } },
         tools: TOOL_SCHEMA
@@ -1017,6 +1056,7 @@ function stop(){
   workletNode = sourceNode = micStream = audioCtx = null;
   stopPlayback();
   openGate();
+  setTurn(null);
   partialLine = agentLine = null;
   agentBuf = ""; pendingZh = null;
 
