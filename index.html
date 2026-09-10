@@ -42,6 +42,9 @@
   .turn[hidden]{display:none}
   .turn .ring{width:9px;height:9px;border-radius:50%;flex:none}
   .turn .zh{font-weight:400;opacity:.7;font-size:12px}
+  .turn .meter{width:56px;height:5px;border-radius:3px;background:rgba(255,255,255,.13);overflow:hidden;flex:none}
+  .turn .meter i{display:block;height:100%;width:0%;background:currentColor;border-radius:3px;transition:width .07s linear}
+  .turn.agent .meter{opacity:.22}
   .turn.you{background:rgba(143,185,138,.13);border-color:rgba(143,185,138,.42);color:var(--sage)}
   .turn.you .ring{background:var(--sage)}
   .turn.agent{background:rgba(232,161,58,.13);border-color:rgba(232,161,58,.42);color:var(--accent)}
@@ -171,7 +174,7 @@
 </div>
 
 <div class="bar">
-  <div class="turn" id="turn" hidden><span class="ring"></span><b id="turnText"></b><span class="zh" id="turnZh"></span></div>
+  <div class="turn" id="turn" hidden><span class="ring"></span><b id="turnText"></b><span class="zh" id="turnZh"></span><span class="meter"><i id="meterFill"></i></span></div>
   <button class="mic" id="micBtn">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
@@ -194,7 +197,7 @@
   </div>
 </div>
 
-<div class="build">build 7 · 09-10</div>
+<div class="build">build 8 · 09-10</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -463,12 +466,25 @@ function setStatus(text, state){
 }
 function showError(msg){ errEl.textContent = msg; }
 
+/* The microphone level, drawn on screen. Without it there is no way to tell
+   "the room is too quiet for it" apart from "it heard me and ignored me". */
+let levelPeak = 0;
+function setLevel(v){
+  const el = document.getElementById("meterFill");
+  if(!el) return;
+  if(v < 0){ levelPeak = 0; el.style.width = "0%"; return; }
+  levelPeak = Math.max(levelPeak * 0.8, Math.min(1, v * 3.2));
+  el.style.width = Math.round(levelPeak * 100) + "%";
+}
+
 /* Whose turn it is. On speakers the microphone is closed while the agent
    speaks — there is no way to know that from the outside, so say it out loud
    on screen. Not knowing was why half of what they said went missing. */
 function setTurn(who){
   const el = document.getElementById("turn");
-  if(!who){ el.hidden = true; return; }
+  // Before session.ready there is nothing to take turns with — a green light
+  // there tells them to start talking into a connection that does not exist.
+  if(!who || !running){ el.hidden = true; return; }
   el.hidden = false;
   el.className = "turn " + who;
   document.getElementById("turnText").textContent =
@@ -823,7 +839,9 @@ async function start(){
           // Cooking Mandarin has pauses in it. 500 ms cut people off mid-sentence,
           // and the moment the agent starts talking the microphone closes — so the
           // rest of what they were saying never arrived. Give them room to think.
-          turn_detection:{ vad_threshold:0.6, min_silence:1000, max_silence:2200, interrupt_response: headphones }
+          // 0.6 made it deaf in a kitchen; the long silences below are what
+          // actually stopped the interruptions, so keep those and hear better.
+          turn_detection:{ vad_threshold:0.5, min_silence:1000, max_silence:2200, interrupt_response: headphones }
         },
         output:{ voice:"anna", format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } },
         tools: TOOL_SCHEMA
@@ -842,6 +860,7 @@ async function start(){
         micBtn.classList.add("on");
         micLabel.textContent = "Stop 停止";
         setStatus("Listening 聆聽中", "live");
+        setTurn("you");
         if(stage === "idle") setStage("picking");
         // The greeting is spoken before it can call a tool, so seed its subtitle.
         setTimeout(() => subtitle(GREETING_ZH), 700);
@@ -963,7 +982,15 @@ async function openMic(){
   workletNode = new AudioWorkletNode(audioCtx, "pump");
   workletNode.port.onmessage = (e) => {
     if(!ws || ws.readyState !== WebSocket.OPEN) return;
-    if(agentSpeaking) return;   // it is talking — do not feed it its own voice
+    if(agentSpeaking){ setLevel(-1); return; }   // it is talking — do not feed it its own voice
+
+    // Show how loud it is before sending, so a silent meter and a deaf agent
+    // are two different bugs on screen instead of one mystery.
+    const pcm = new Int16Array(e.data);
+    let peak = 0;
+    for(let i = 0; i < pcm.length; i += 6){ const a = Math.abs(pcm[i]); if(a > peak) peak = a; }
+    setLevel(peak / 32768);
+
     ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(e.data) }));
   };
   sourceNode.connect(workletNode);
@@ -1057,6 +1084,7 @@ function stop(){
   stopPlayback();
   openGate();
   setTurn(null);
+  setLevel(-1);
   partialLine = agentLine = null;
   agentBuf = ""; pendingZh = null;
 
