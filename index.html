@@ -106,6 +106,8 @@
   .err:empty{display:none}
 
   /* ---- bottom ---- */
+  .build{position:fixed;right:10px;bottom:5px;z-index:60;font-size:10px;letter-spacing:.05em;
+    color:var(--ink);opacity:.32;pointer-events:none;user-select:none}
   .bar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 26%);
     padding:30px 22px 20px;display:flex;flex-direction:column;align-items:center;gap:12px}
   button.mic{display:flex;align-items:center;gap:11px;background:var(--accent);color:#1c1204;border:0;
@@ -181,6 +183,8 @@
     <span style="opacity:.6">Screen is always bilingual 畫面一律中英對照</span>
   </div>
 </div>
+
+<div class="build">build 6 · 09-10</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -612,7 +616,7 @@ const TOOL_SCHEMA = [
       have:{ type:"array", items:{ type:"string" }, description:"Ingredients they said they have, e.g. ['雞蛋','番茄']" }
     }, required:["have"] } },
   { type:"function", name:"start_recipe",
-    description:"Begin cooking a dish. Call this as soon as they have chosen.",
+    description:"Begin cooking a dish. Call this the moment they name one — do not reply first and do not wait for confirmation. What comes back contains step one, which you must read out in the same turn.",
     parameters:{ type:"object", properties:{
       dish:{ type:"string", description:"Dish name, Mandarin or English, e.g. 泡麵升級版" }
     }, required:["dish"] } },
@@ -659,6 +663,13 @@ Your tone follows the stage that the tools hand back:
   story about food, react to what they say. Do NOT announce the countdown, do NOT push them on.
 - done: proud of them for a sentence, then get out of the way.
 
+THE MOMENT THEY NAME A DISH:
+Call start_recipe straight away. Do not answer "great, let's get started" and stop — a turn
+that ends without a step in it leaves them standing in the kitchen with nothing to do.
+The tool hands you step one; in that same turn, show its instruction_zh as the subtitle and
+read step one out loud. Only then stop and wait.
+The same goes for suggest_dishes: once they pick one of the matches, go straight to start_recipe.
+
 SUBTITLES — how every turn of yours is shaped:
 They do not read English well, and the screen is how they follow you. So each time it is your turn:
 1. Work out what you want to say.
@@ -694,6 +705,7 @@ const KEYTERMS = [
 
 let ws = null, audioCtx = null, micStream = null, workletNode = null, sourceNode = null;
 let playCtx = null, playGain = null, playHead = 0;
+let pendingPcm = [], pendingLen = 0;
 let running = false;
 
 /* The echo gate. On speakers the agent hears itself, gets transcribed as
@@ -769,12 +781,12 @@ async function start(){
         system_prompt: systemPrompt(lang),
         greeting: GREETING[lang],
         input:{
-          format:{ encoding:"audio/pcm" },
+          format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE },
           keyterms: KEYTERMS,
           // Barge-in needs headphones — on speakers it would interrupt itself.
           turn_detection:{ vad_threshold:0.5, min_silence:500, max_silence:1400, interrupt_response: headphones }
         },
-        output:{ voice:"anna", format:{ encoding:"audio/pcm" } },
+        output:{ voice:"anna", format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } },
         tools: TOOL_SCHEMA
       }
     }));
@@ -815,6 +827,7 @@ async function start(){
         break;
 
       case "reply.done":
+        flushPlayback();          // the tail packets, before anything reads playHead
         if(agentLine) commitAgent(agentBuf);
         if(ev.status === "interrupted"){ stopPlayback(); openGate(); }
         else agentAudioEndsSoon();
@@ -854,19 +867,43 @@ async function start(){
 }
 
 async function openMic(){
-  audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
+  // Safari quietly ignores a requested sampleRate. Ask for 24 kHz there and
+  // you still get 44.1 or 48 — but we would keep telling the API the audio is
+  // 24 kHz, so every word arrives sped up and the Mandarin comes back wrong.
+  // Take whatever rate the device hands us and convert inside the worklet.
+  audioCtx = new AudioContext();
   if(audioCtx.state === "suspended") await audioCtx.resume();
+  const deviceRate = audioCtx.sampleRate;
 
   // The worklet lives in a Blob so this whole app stays one file.
   const workletSrc = `
     class Pump extends AudioWorkletProcessor{
-      constructor(){ super(); this.buf = []; this.need = ${Math.round(SAMPLE_RATE * CHUNK_MS / 1000)}; }
+      constructor(){
+        super();
+        this.ratio = ${deviceRate} / ${SAMPLE_RATE};  // e.g. 48000 / 24000 = 2
+        this.buf  = [];   // samples in, at the device rate
+        this.pos  = 0;    // read head into buf, fractional
+        this.out  = [];   // samples out, at 24 kHz
+        this.need = ${Math.round(SAMPLE_RATE * CHUNK_MS / 1000)};
+      }
       process(inputs){
         const ch = inputs[0] && inputs[0][0];
         if(ch){
-          this.buf.push(...ch);
-          while(this.buf.length >= this.need){
-            const slice = this.buf.splice(0, this.need);
+          for(let i=0;i<ch.length;i++) this.buf.push(ch[i]);
+
+          // Step the read head forward by one ratio each time, interpolating
+          // between the two samples it lands between.
+          while(this.pos + 1 < this.buf.length){
+            const i0 = Math.floor(this.pos), frac = this.pos - i0;
+            this.out.push(this.buf[i0] * (1 - frac) + this.buf[i0 + 1] * frac);
+            this.pos += this.ratio;
+          }
+          // Forget what we have already read past.
+          const drop = Math.floor(this.pos);
+          if(drop > 0){ this.buf.splice(0, drop); this.pos -= drop; }
+
+          while(this.out.length >= this.need){
+            const slice = this.out.splice(0, this.need);
             const pcm = new Int16Array(slice.length);
             for(let i=0;i<slice.length;i++){
               const s = Math.max(-1, Math.min(1, slice[i]));
@@ -903,17 +940,34 @@ function toBase64(arrayBuffer){
 }
 
 /* ---- playback ----------------------------------------------------
-   Audio arrives as a stream of small chunks. Starting each one as its own
-   source with a hard edge makes the voice swell and clip at every seam.
-   So: one shared gain node, a short lead-in before the first chunk plays,
-   and a 4 ms ramp at each end so the joins are inaudible.
+   Audio arrives as a stream of small chunks. Schedule each one back to
+   back on a single timeline, after a short lead-in so the network has a
+   head start.
+
+   Do NOT fade each chunk in and out. A chunk is ~50 ms, so a fade at both
+   ends means the volume dips 20 times a second — that is the hiss, not a
+   codec problem. Consecutive PCM chunks are already sample-continuous;
+   butt-joining them is silent. This is the 9/8 path, restored.
    ------------------------------------------------------------------ */
 
 const PREBUFFER = 0.18;   // seconds of lead before the first chunk plays
-const RAMP      = 0.004;  // seconds of fade at each seam
+const BATCH_MS   = 80;    // gather the 10 ms packets into one block before scheduling
 
 function playChunk(b64){
   if(!b64) return;
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  pendingPcm.push(new Int16Array(bytes.buffer));
+  pendingLen += bytes.length >> 1;
+  if(pendingLen >= SAMPLE_RATE * BATCH_MS / 1000) flushPlayback();
+}
+
+/* Hand whatever has arrived to the speakers as one continuous block.
+   Called on every ~80 ms of audio, and once more when the reply ends so the
+   last few packets are not left sitting in the buffer. */
+function flushPlayback(){
+  if(!pendingLen) return;
   if(!playCtx){
     playCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
     playGain = playCtx.createGain();
@@ -921,38 +975,28 @@ function playChunk(b64){
     playGain.connect(playCtx.destination);
     playHead = playCtx.currentTime + PREBUFFER;
   }
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
-  const pcm = new Int16Array(bytes.buffer);
 
-  const buf = playCtx.createBuffer(1, pcm.length, SAMPLE_RATE);
+  const buf = playCtx.createBuffer(1, pendingLen, SAMPLE_RATE);
   const ch = buf.getChannelData(0);
-  for(let i=0;i<pcm.length;i++) ch[i] = pcm[i] / 32768;
+  let o = 0;
+  for(const p of pendingPcm){ for(let i=0;i<p.length;i++) ch[o++] = p[i] / 32768; }
+  pendingPcm = []; pendingLen = 0;
 
   const src = playCtx.createBufferSource();
   src.buffer = buf;
-
-  // Its own little envelope, so consecutive chunks cross without a click.
-  const g = playCtx.createGain();
-  src.connect(g); g.connect(playGain);
+  src.connect(playGain);
 
   const now = playCtx.currentTime;
   // Underran while the network caught up — restart the lead rather than
-  // stacking chunks on top of each other, which is what made it swell.
+  // stacking blocks on top of each other, which is what made it swell.
   if(playHead < now + 0.01) playHead = now + PREBUFFER;
 
-  const t0 = playHead, dur = buf.duration, r = Math.min(RAMP, dur / 3);
-  g.gain.setValueAtTime(0, t0);
-  g.gain.linearRampToValueAtTime(1, t0 + r);
-  g.gain.setValueAtTime(1, t0 + dur - r);
-  g.gain.linearRampToValueAtTime(0, t0 + dur);
-
-  src.start(t0);
-  playHead = t0 + dur;
+  src.start(playHead);
+  playHead += buf.duration;
 }
 
 function stopPlayback(){
+  pendingPcm = []; pendingLen = 0;
   if(!playCtx) return;
   playCtx.close();
   playCtx = null; playGain = null; playHead = 0;
