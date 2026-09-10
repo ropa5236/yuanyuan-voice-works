@@ -197,7 +197,7 @@
   </div>
 </div>
 
-<div class="build">build 8 · 09-10</div>
+<div class="build">build 9 · 09-10</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -864,7 +864,15 @@ async function start(){
         if(stage === "idle") setStage("picking");
         // The greeting is spoken before it can call a tool, so seed its subtitle.
         setTimeout(() => subtitle(GREETING_ZH), 700);
-        await openMic();
+        try{
+          await openMic();
+        }catch(err){
+          // This used to fail silently: green light, "Listening", no microphone.
+          showError("Could not open the microphone — " + (err && err.message || err) +
+                    "　麥克風打不開，圓圓聽不到你。");
+          setStatus("Mic failed 麥克風沒開", "");
+          setTurn(null);
+        }
         break;
 
       case "transcript.user.delta": showPartial(ev.text || ""); break;
@@ -924,16 +932,21 @@ async function start(){
   ws.onclose  = () => { if(running) stop(); };
 }
 
+/* The microphone path. Two things have bitten us here, so both are handled.
+   Safari ignores a requested sampleRate, so the conversion to 24 kHz happens
+   in software. And iOS Safari has been known to refuse a blob: URL for
+   addModule — which threw inside a message handler nobody was catching, so
+   the screen said "Listening", the light went green, and the microphone had
+   never actually opened. Silence with no error is the worst failure there is. */
+let audioPath = "";
+
 async function openMic(){
-  // Safari quietly ignores a requested sampleRate. Ask for 24 kHz there and
-  // you still get 44.1 or 48 — but we would keep telling the API the audio is
-  // 24 kHz, so every word arrives sped up and the Mandarin comes back wrong.
-  // Take whatever rate the device hands us and convert inside the worklet.
   audioCtx = new AudioContext();
   if(audioCtx.state === "suspended") await audioCtx.resume();
   const deviceRate = audioCtx.sampleRate;
+  const need = Math.round(SAMPLE_RATE * CHUNK_MS / 1000);
+  sourceNode = audioCtx.createMediaStreamSource(micStream);
 
-  // The worklet lives in a Blob so this whole app stays one file.
   const workletSrc = `
     class Pump extends AudioWorkletProcessor{
       constructor(){
@@ -942,24 +955,19 @@ async function openMic(){
         this.buf  = [];   // samples in, at the device rate
         this.pos  = 0;    // read head into buf, fractional
         this.out  = [];   // samples out, at 24 kHz
-        this.need = ${Math.round(SAMPLE_RATE * CHUNK_MS / 1000)};
+        this.need = ${need};
       }
       process(inputs){
         const ch = inputs[0] && inputs[0][0];
         if(ch){
           for(let i=0;i<ch.length;i++) this.buf.push(ch[i]);
-
-          // Step the read head forward by one ratio each time, interpolating
-          // between the two samples it lands between.
           while(this.pos + 1 < this.buf.length){
             const i0 = Math.floor(this.pos), frac = this.pos - i0;
             this.out.push(this.buf[i0] * (1 - frac) + this.buf[i0 + 1] * frac);
             this.pos += this.ratio;
           }
-          // Forget what we have already read past.
           const drop = Math.floor(this.pos);
           if(drop > 0){ this.buf.splice(0, drop); this.pos -= drop; }
-
           while(this.out.length >= this.need){
             const slice = this.out.splice(0, this.need);
             const pcm = new Int16Array(slice.length);
@@ -974,27 +982,80 @@ async function openMic(){
       }
     }
     registerProcessor('pump', Pump);`;
-  const blobUrl = URL.createObjectURL(new Blob([workletSrc], { type:"application/javascript" }));
-  await audioCtx.audioWorklet.addModule(blobUrl);
-  URL.revokeObjectURL(blobUrl);
 
-  sourceNode  = audioCtx.createMediaStreamSource(micStream);
-  workletNode = new AudioWorkletNode(audioCtx, "pump");
-  workletNode.port.onmessage = (e) => {
-    if(!ws || ws.readyState !== WebSocket.OPEN) return;
-    if(agentSpeaking){ setLevel(-1); return; }   // it is talking — do not feed it its own voice
+  let running_worklet = false;
+  try{
+    try{
+      const blobUrl = URL.createObjectURL(new Blob([workletSrc], { type:"application/javascript" }));
+      await audioCtx.audioWorklet.addModule(blobUrl);
+      URL.revokeObjectURL(blobUrl);
+    }catch(e){
+      // Second try, as a data: URL — the one iOS has been happier with.
+      await audioCtx.audioWorklet.addModule(
+        "data:application/javascript;charset=utf-8," + encodeURIComponent(workletSrc));
+    }
+    workletNode = new AudioWorkletNode(audioCtx, "pump");
+    workletNode.port.onmessage = (e) => sendMicChunk(e.data);
+    sourceNode.connect(workletNode);
+    running_worklet = true;
+    audioPath = "worklet";
+  }catch(e){
+    audioPath = "fallback";
+  }
 
-    // Show how loud it is before sending, so a silent meter and a deaf agent
-    // are two different bugs on screen instead of one mystery.
-    const pcm = new Int16Array(e.data);
-    let peak = 0;
-    for(let i = 0; i < pcm.length; i += 6){ const a = Math.abs(pcm[i]); if(a > peak) peak = a; }
-    setLevel(peak / 32768);
+  if(!running_worklet){
+    // Deprecated, but it runs on everything, and anything beats silence.
+    const node = audioCtx.createScriptProcessor(4096, 1, 1);
+    const ratio = deviceRate / SAMPLE_RATE;
+    let buf = [], pos = 0, out = [];
+    node.onaudioprocess = (ev) => {
+      const ch = ev.inputBuffer.getChannelData(0);
+      for(let i=0;i<ch.length;i++) buf.push(ch[i]);
+      while(pos + 1 < buf.length){
+        const i0 = Math.floor(pos), frac = pos - i0;
+        out.push(buf[i0] * (1 - frac) + buf[i0 + 1] * frac);
+        pos += ratio;
+      }
+      const drop = Math.floor(pos);
+      if(drop > 0){ buf.splice(0, drop); pos -= drop; }
+      while(out.length >= need){
+        const slice = out.splice(0, need);
+        const pcm = new Int16Array(slice.length);
+        for(let i=0;i<slice.length;i++){
+          const s = Math.max(-1, Math.min(1, slice[i]));
+          pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+        sendMicChunk(pcm.buffer);
+      }
+    };
+    // A ScriptProcessor only runs once it reaches the destination, so route it
+    // through a silent gain instead of letting the kitchen hear itself.
+    const mute = audioCtx.createGain(); mute.gain.value = 0;
+    sourceNode.connect(node); node.connect(mute); mute.connect(audioCtx.destination);
+    workletNode = node;
+  }
 
-    ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(e.data) }));
-  };
-  sourceNode.connect(workletNode);
-  // Not connected to the destination — we never want the mic echoed back.
+  stampAudio(Math.round(deviceRate / 1000) + "k·" + audioPath);
+}
+
+/* The one door microphone audio leaves by, whichever node produced it. */
+function sendMicChunk(arrayBuffer){
+  if(!ws || ws.readyState !== WebSocket.OPEN) return;
+  if(agentSpeaking){ setLevel(-1); return; }   // it is talking — do not feed it its own voice
+
+  const pcm = new Int16Array(arrayBuffer);
+  let peak = 0;
+  for(let i = 0; i < pcm.length; i += 6){ const a = Math.abs(pcm[i]); if(a > peak) peak = a; }
+  setLevel(peak / 32768);
+
+  ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(arrayBuffer) }));
+}
+
+/* Which audio path actually took, printed next to the build stamp — so a
+   screenshot of the corner is enough to tell what happened. */
+function stampAudio(txt){
+  const el = document.querySelector(".build");
+  if(el) el.textContent = "build 9 · 09-10 · " + txt;
 }
 
 function toBase64(arrayBuffer){
