@@ -197,7 +197,7 @@
   </div>
 </div>
 
-<div class="build">build 9 · 09-10</div>
+<div class="build">build 10 · 09-10</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -318,6 +318,262 @@ const RECIPES = [
         zh:"醬油沿著鍋邊淋，不要直接倒在飯上，你會聽到滋一聲。" },
       { text:"Scallion, one last toss, and it's done.",
         zh:"撒蔥花，最後翻一下，完成。" }
+    ]
+  },
+  {
+    id:"pan_chicken", zh:"香煎雞腿排", en:"Pan-seared Chicken Thigh", minutes:18,
+    blurb:"Almost no work. Almost all waiting. Crispiest skin you will make at home.",
+    blurbZh:"幾乎不用動手，幾乎都在等。你在家能煎出最脆的一次雞皮。",
+    keys:["雞腿","雞腿排","雞排","雞肉","雞","去骨雞腿","chicken","thigh","chicken thigh","drumstick"],
+    ingredients:[
+      { zh:"去骨雞腿排 1 片", en:"1 boneless chicken thigh" },
+      { zh:"鹽 適量", en:"Salt" },
+      { zh:"黑胡椒 適量", en:"Black pepper" }
+    ],
+    steps:[
+      { text:"Pat the thigh really dry with kitchen paper, then salt both sides and leave it on the counter.",
+        zh:"雞腿排用廚房紙巾徹底擦乾，兩面抹鹽，就放在檯面上別動。",
+        wait:300, label:"Salt drawing out moisture", labelZh:"等鹽把水分逼出來",
+        tip:"Put your pan on the lowest heat now — a slowly heated pan is the whole trick.",
+        tipZh:"現在把鍋子放上去開最小火，鍋子慢慢熱起來就是整道菜的訣竅。" },
+      { text:"Wipe the thigh dry one more time, then lay it skin side down in the pan. Medium heat. Now do not touch it.",
+        zh:"再擦一次乾，皮朝下放進鍋子，轉中火。接下來完全不要碰它。",
+        wait:360, label:"Skin crisping", labelZh:"等雞皮變脆",
+        tip:"Six whole minutes with your hands free. Do not lift it to peek — that is what ruins the skin.",
+        tipZh:"整整六分鐘手是空的。千萬別掀起來偷看，雞皮就是這樣毀掉的。" },
+      { text:"Flip it. The skin side is done — the rest is easy.",
+        zh:"翻面。雞皮那面已經完成了，剩下的很輕鬆。",
+        wait:240, label:"Cooking through", labelZh:"等裡面熟透",
+        tip:"Grind some black pepper over it while it finishes.",
+        tipZh:"趁現在磨一點黑胡椒撒上去。" },
+      { text:"Onto a plate, and leave it alone. I know it smells ready. It is not ready.",
+        zh:"夾到盤子上放著別動。我知道聞起來好了，但還沒好。",
+        wait:180, label:"Resting", labelZh:"靜置中",
+        tip:"Most people skip this and all the juice runs out on the board. Three minutes.",
+        tipZh:"大家都跳過這步，然後肉汁全流到砧板上。就三分鐘。" },
+      { text:"Slice it thick, against the grain. Done.",
+        zh:"逆紋切厚片。完成。" }
+    ]
+  },
+  {
+    id:"three_cup", zh:"三杯雞", en:"Three-cup Chicken", minutes:25,
+    blurb:"The smell alone will bring someone into the kitchen.",
+    blurbZh:"光是那個味道就會把人從房間裡吸過來。",
+    keys:["三杯","三杯雞","九層塔","麻油","米酒","雞","雞肉","three cup","three-cup","basil","sesame oil"],
+    ingredients:[
+      { zh:"雞腿肉 300 克，切塊", en:"300g chicken thigh, cut into chunks" },
+      { zh:"老薑 一小塊，切片", en:"A thumb of ginger, sliced" },
+      { zh:"蒜頭 6 瓣", en:"6 cloves garlic" },
+      { zh:"九層塔 一大把", en:"A big handful of Thai basil" },
+      { zh:"麻油、醬油、米酒 各 2 大匙", en:"2 tbsp each: sesame oil, soy sauce, rice wine" },
+      { zh:"冰糖 1 小匙", en:"1 tsp rock sugar" }
+    ],
+    steps:[
+      { text:"Sesame oil in a cold pan, ginger slices in, lowest heat. We are drying the ginger out, not frying it.",
+        zh:"冷鍋倒麻油，薑片放進去，開最小火。我們是要把薑片煸乾，不是炸它。",
+        wait:150, label:"Ginger drying out", labelZh:"等薑片煸乾",
+        tip:"Cut the chicken into chunks now, and peel the garlic.",
+        tipZh:"趁現在把雞肉切塊、蒜頭剝好。" },
+      { text:"Garlic in for thirty seconds, then the chicken, skin side down. Turn the heat up.",
+        zh:"蒜頭下去炒三十秒，然後雞肉皮朝下放進去，火轉大。",
+        wait:300, label:"Chicken browning", labelZh:"等雞肉上色",
+        tip:"Give it one stir halfway. Otherwise leave it.",
+        tipZh:"中間翻一次就好，其他時間別動它。" },
+      { text:"Soy sauce, rice wine and the rock sugar all in. Let it come up to a bubble, then lid on, heat down.",
+        zh:"醬油、米酒、冰糖全部下去，煮到冒泡就蓋鍋蓋、轉小火。",
+        wait:480, label:"Braising", labelZh:"燜煮中",
+        tip:"Eight minutes, hands completely free. This is the part of cooking nobody tells you about.",
+        tipZh:"八分鐘，手完全空著。這段時間才是煮飯最好的部分，只是沒人跟你講。" },
+      { text:"Lid off, heat up, and let the sauce thicken until it coats the chicken.",
+        zh:"開蓋轉大火，把醬汁收到會裹在雞肉上。",
+        wait:180, label:"Sauce reducing", labelZh:"等醬汁收乾",
+        tip:"Wash the basil now and shake it dry.",
+        tipZh:"趁現在把九層塔洗一洗、甩乾。" },
+      { text:"Kill the heat, throw the basil in and fold it through. The residual heat does the rest.",
+        zh:"關火，九層塔丟下去拌一拌，餘溫就夠了。" }
+    ]
+  },
+  {
+    id:"braised_pork", zh:"滷肉飯", en:"Braised Pork Rice", minutes:40,
+    blurb:"Twenty-five minutes of it is just a pot quietly doing its thing.",
+    blurbZh:"其中有二十五分鐘，只是一鍋東西自己在那邊慢慢滷。",
+    keys:["滷肉","滷肉飯","魯肉飯","豬肉","五花","五花肉","紅蔥頭","braised pork","pork rice","pork belly"],
+    ingredients:[
+      { zh:"五花肉 300 克，切小丁", en:"300g pork belly, diced small" },
+      { zh:"紅蔥頭 5 顆，切末", en:"5 shallots, minced" },
+      { zh:"蒜末 2 大匙", en:"2 tbsp minced garlic" },
+      { zh:"醬油 4 大匙、米酒 2 大匙、糖 1 大匙", en:"4 tbsp soy sauce, 2 tbsp rice wine, 1 tbsp sugar" },
+      { zh:"水 400 毫升", en:"400ml water" },
+      { zh:"白飯", en:"Cooked rice" }
+    ],
+    steps:[
+      { text:"Pork into a cold dry pan, medium heat. We want it to give up its own fat before anything else goes in.",
+        zh:"五花肉丁放進冷鍋，中火。先讓它把自己的油逼出來，其他什麼都先別加。",
+        wait:300, label:"Rendering the fat", labelZh:"等豬油逼出來",
+        tip:"Mince the shallots and garlic while it renders.",
+        tipZh:"趁這時候把紅蔥頭和蒜頭切末。" },
+      { text:"Shallots and garlic straight into that pork fat. Stir until they go golden — watch them, they turn fast.",
+        zh:"紅蔥頭和蒜末直接下那鍋豬油，炒到金黃。要顧著，它變色很快。",
+        wait:90, label:"Shallots going golden", labelZh:"等紅蔥頭變金黃",
+        tip:"Stay by the pan for this one. Ninety seconds.",
+        tipZh:"這步要顧著，就九十秒。" },
+      { text:"Soy sauce, rice wine, sugar and the water. Bring it up to a boil, then drop to the lowest heat and put the lid on.",
+        zh:"醬油、米酒、糖、水全下，煮滾之後轉最小火，蓋上鍋蓋。",
+        wait:1500, label:"Braising low and slow", labelZh:"小火慢滷",
+        tip:"Twenty-five minutes. Go and do something else entirely — I will call you back.",
+        tipZh:"二十五分鐘。去做別的事吧，時間到我會叫你。" },
+      { text:"Lid off. If it looks a bit loose, give it a few minutes on higher heat to tighten up.",
+        zh:"開蓋。如果覺得太稀，開大一點火收個幾分鐘。",
+        wait:240, label:"Reducing", labelZh:"收汁中",
+        tip:"Get the rice into bowls now.",
+        tipZh:"趁現在把飯盛到碗裡。" },
+      { text:"Spoon it over hot rice, with plenty of the sauce. That is the whole point.",
+        zh:"淋在熱飯上，醬汁要多。那才是重點。" }
+    ]
+  },
+  {
+    id:"mapo", zh:"麻婆豆腐", en:"Mapo Tofu", minutes:15,
+    blurb:"Fast, loud, and it makes you look like you know what you are doing.",
+    blurbZh:"快、香、而且端出來很像會煮飯的人。",
+    keys:["麻婆","麻婆豆腐","豆腐","絞肉","豆瓣醬","花椒","mapo","tofu","minced pork","doubanjiang"],
+    ingredients:[
+      { zh:"嫩豆腐 1 盒，切方塊", en:"1 block soft tofu, cubed" },
+      { zh:"豬絞肉 150 克", en:"150g minced pork" },
+      { zh:"辣豆瓣醬 1.5 大匙", en:"1.5 tbsp spicy bean paste" },
+      { zh:"蔥、薑、蒜 各適量", en:"Scallion, ginger, garlic" },
+      { zh:"太白粉水 少許", en:"Cornstarch slurry" },
+      { zh:"花椒粉 少許", en:"Ground Sichuan pepper" }
+    ],
+    steps:[
+      { text:"Cube the tofu and slide it into a bowl of lightly salted warm water. It stops it breaking up later.",
+        zh:"豆腐切方塊，泡進溫的淡鹽水裡。等一下才不會一炒就散。",
+        wait:180, label:"Tofu firming up", labelZh:"等豆腐定型",
+        tip:"Chop the scallion, ginger and garlic while it sits.",
+        tipZh:"趁現在把蔥薑蒜切好。" },
+      { text:"Mince into a hot pan, break it up and let it get some colour.",
+        zh:"絞肉下熱鍋，炒散、炒到有點焦香。",
+        wait:120, label:"Pork browning", labelZh:"等絞肉上色",
+        tip:"Keep breaking it up so nothing clumps.",
+        tipZh:"一直撥散，不要讓它結成一塊。" },
+      { text:"Push the meat aside, bean paste into the bare side of the pan, and stir until the oil turns red.",
+        zh:"肉撥到一邊，豆瓣醬下空的那半邊，炒到油變紅。",
+        wait:60, label:"Chilli oil coming out", labelZh:"等紅油炒出來",
+        tip:"That red oil is the flavour. Do not rush it.",
+        tipZh:"那個紅油就是味道的來源，別急。" },
+      { text:"A cup of water in, then drain the tofu and slide it in. Do not stir it — push it gently with the back of the spoon.",
+        zh:"倒一杯水，豆腐瀝乾滑進去。不要用攪的，用湯匙背輕輕推。",
+        wait:240, label:"Simmering", labelZh:"小火煮",
+        tip:"Mix your cornstarch slurry while it simmers.",
+        tipZh:"趁現在調太白粉水。" },
+      { text:"Slurry in to thicken, then off the heat. Sichuan pepper and scallion over the top.",
+        zh:"太白粉水勾芡，關火，撒上花椒粉和蔥花。" }
+    ]
+  },
+  {
+    id:"corn_soup", zh:"玉米濃湯", en:"Corn Chowder", minutes:20,
+    blurb:"Tastes like a restaurant made it. Nobody needs to know.",
+    blurbZh:"喝起來像餐廳做的，沒人需要知道真相。",
+    keys:["玉米","玉米濃湯","濃湯","湯","洋蔥","牛奶","corn","chowder","soup","corn soup"],
+    ingredients:[
+      { zh:"玉米粒 1 罐", en:"1 can sweetcorn" },
+      { zh:"洋蔥 半顆，切丁", en:"Half an onion, diced" },
+      { zh:"奶油 20 克", en:"20g butter" },
+      { zh:"麵粉 2 大匙", en:"2 tbsp flour" },
+      { zh:"牛奶 400 毫升", en:"400ml milk" },
+      { zh:"鹽、黑胡椒", en:"Salt and black pepper" }
+    ],
+    steps:[
+      { text:"Butter into a pot on low, onion in, and let it go soft and sweet. Do not let it brown.",
+        zh:"小火融奶油，洋蔥丁下去炒到軟、炒到變甜。不要炒到焦。",
+        wait:240, label:"Onion softening", labelZh:"等洋蔥變軟",
+        tip:"Open the corn and drain it while you wait.",
+        tipZh:"趁現在把玉米罐頭打開瀝乾。" },
+      { text:"Flour in, stir it into the butter until it looks like wet sand. Cook the raw taste out.",
+        zh:"麵粉下去，跟奶油拌到像濕沙子。要把粉味炒掉。",
+        wait:60, label:"Cooking out the flour", labelZh:"等粉味炒掉",
+        tip:"Keep stirring this one, it catches easily.",
+        tipZh:"這步要一直攪，很容易黏鍋。" },
+      { text:"Milk in a little at a time, stirring after each splash. Rushing this is how you get lumps.",
+        zh:"牛奶一點一點倒，每倒一次就攪勻。一次倒完就會結顆粒。",
+        wait:120, label:"Thickening", labelZh:"等湯變稠",
+        tip:"Slow and steady beats a whisk here.",
+        tipZh:"慢慢來比用打蛋器猛攪有效。" },
+      { text:"Corn in, lowest heat, and let it sit and get to know itself.",
+        zh:"玉米粒下去，轉最小火，讓它慢慢融合。",
+        wait:360, label:"Simmering", labelZh:"小火慢煮",
+        tip:"Give it a stir every couple of minutes so the bottom does not catch.",
+        tipZh:"每隔一兩分鐘攪一下，鍋底才不會焦。" },
+      { text:"Salt, a lot of black pepper, taste it, and it is done.",
+        zh:"加鹽、多一點黑胡椒，嚐一下味道就完成了。" }
+    ]
+  },
+  {
+    id:"miso", zh:"味噌豆腐湯", en:"Miso Tofu Soup", minutes:12,
+    blurb:"The one that turns three leftover things into a proper meal.",
+    blurbZh:"能把冰箱裡三樣剩下的東西變成一頓正餐的那道。",
+    keys:["味噌","味噌湯","豆腐湯","豆腐","海帶芽","柴魚","miso","miso soup","tofu soup","seaweed"],
+    ingredients:[
+      { zh:"味噌 2 大匙", en:"2 tbsp miso paste" },
+      { zh:"嫩豆腐 半盒，切丁", en:"Half a block of soft tofu, diced" },
+      { zh:"柴魚片 一小把", en:"A handful of bonito flakes" },
+      { zh:"乾海帶芽 少許", en:"A pinch of dried wakame" },
+      { zh:"蔥花", en:"Chopped scallion" }
+    ],
+    steps:[
+      { text:"600ml of water into a pot, medium heat, bonito flakes in as it warms.",
+        zh:"鍋裡裝 600 毫升水，中火，柴魚片趁水還沒滾就放進去。",
+        wait:240, label:"Making the stock", labelZh:"等高湯出味",
+        tip:"Dice the tofu now — gently, it is soft.",
+        tipZh:"趁現在把豆腐切丁，輕一點，它很嫩。" },
+      { text:"Strain the flakes out, then slide the tofu in.",
+        zh:"把柴魚片撈掉，豆腐輕輕滑進去。",
+        wait:180, label:"Tofu warming through", labelZh:"等豆腐熱透",
+        tip:"Rinse the wakame in cold water while it heats.",
+        tipZh:"趁現在用冷水把海帶芽沖一下。" },
+      { text:"Heat right down. Now the important bit — never boil miso. Scoop some hot soup into a bowl, dissolve the miso in that, then pour it back.",
+        zh:"火轉到最小。重點來了，味噌絕對不能煮滾。舀一點熱湯到碗裡，把味噌化開，再倒回鍋子。",
+        wait:0 },
+      { text:"Wakame and scallion in, then off the heat immediately.",
+        zh:"海帶芽和蔥花下去，馬上關火。",
+        wait:30, label:"Wakame opening up", labelZh:"等海帶芽張開",
+        tip:"Thirty seconds and it is on the table.",
+        tipZh:"三十秒後就可以上桌了。" }
+    ]
+  },
+  {
+    id:"garlic_greens", zh:"蒜炒時蔬", en:"Garlic Greens", minutes:8,
+    blurb:"For the nights when you need something green and you need it now.",
+    blurbZh:"給那種「今天一定要吃到青菜，而且現在就要」的晚上。",
+    keys:["青菜","炒青菜","蒜炒","高麗菜","空心菜","地瓜葉","菠菜","蔬菜","greens","vegetable","cabbage","spinach","garlic"],
+    ingredients:[
+      { zh:"青菜 一把", en:"A bunch of leafy greens" },
+      { zh:"蒜頭 4 瓣，切片", en:"4 cloves garlic, sliced" },
+      { zh:"鹽 少許", en:"Salt" },
+      { zh:"水 2 大匙", en:"2 tbsp water" }
+    ],
+    steps:[
+      { text:"Wash the greens and shake them as dry as you can. Wet greens steam instead of frying.",
+        zh:"青菜洗好，盡量把水甩乾。濕的青菜下鍋只會變成用蒸的。",
+        wait:120, label:"Draining", labelZh:"等瀝乾",
+        tip:"Slice the garlic while they drain.",
+        tipZh:"趁現在把蒜頭切片。" },
+      { text:"Get the pan properly hot first, then the oil, then the garlic. Hot pan, cold oil — that order.",
+        zh:"先把鍋子燒到很熱，再下油，再下蒜片。熱鍋冷油，順序不能反。",
+        wait:30, label:"Garlic sizzling", labelZh:"等蒜片爆香",
+        tip:"The moment it smells like garlic, the greens go in.",
+        tipZh:"一聞到蒜香，青菜就要下鍋了。" },
+      { text:"All the greens at once, high heat, and keep them moving.",
+        zh:"青菜一次全下，大火，不停翻炒。",
+        wait:60, label:"Stir-frying", labelZh:"大火快炒",
+        tip:"Stay with this one — a minute is all it takes.",
+        tipZh:"這步要顧著，一分鐘就好。" },
+      { text:"Pinch of salt, a splash of water, lid on for a moment to finish the stems.",
+        zh:"撒點鹽，加兩大匙水，蓋一下鍋讓菜梗熟透。",
+        wait:45, label:"Steaming the stems", labelZh:"等菜梗變軟",
+        tip:"Get a plate ready.",
+        tipZh:"把盤子準備好。" },
+      { text:"Lid off, straight onto a plate. Greens wait for nobody.",
+        zh:"開蓋馬上盛盤。青菜不等人的。" }
     ]
   }
 ];
@@ -590,7 +846,15 @@ const TOOLS = {
     const list = Array.isArray(have) ? have : String(have || "").split(/[,、\s]+/);
     const words = list.map(x => String(x).toLowerCase().trim()).filter(Boolean);
     const scored = RECIPES.map(r => {
-      const hits = r.keys.filter(k => words.some(w => w.includes(k.toLowerCase()) || k.toLowerCase().includes(w)));
+      // Substring matching on Mandarin is too eager: 洋蔥 contains 蔥, so an onion
+      // used to match every dish with scallion in it. One-character keys must match exactly.
+      const hits = r.keys.filter(k => {
+        const kk = k.toLowerCase();
+        return words.some(w =>
+          w === kk ||
+          (kk.length >= 2 && w.includes(kk)) ||
+          (w.length  >= 2 && kk.includes(w)));
+      });
       return { r, score: new Set(hits).size };
     }).filter(x => x.score > 0).sort((a,b) => b.score - a.score).slice(0,3);
 
@@ -604,7 +868,8 @@ const TOOLS = {
 
   start_recipe({ dish }){
     const r = findRecipe(dish);
-    if(!r) return { error:`I don't know "${dish}". The book has: ` + RECIPES.map(x => x.en).join(", ") };
+    if(!r) return { error:`"${dish}" is not in the book. Do not push them onto another dish — offer to improvise it: say you have not made it before, ask if they want you to try, and call improvise_recipe once they say yes.`,
+                    book: RECIPES.map(x => x.en) };
     recipe = r; stepIdx = 0; matched = [];
     clearTimer(); setStage("cooking"); saveState();
     say("RECIPE", r.en + " — " + r.steps.length + " steps", "act", r.zh + " — 共 " + r.steps.length + " 步");
@@ -630,6 +895,43 @@ const TOOLS = {
   },
 
   repeat_step(){ return stepPayload(); },
+
+  /* A dish the book does not have. The agent works the whole thing out and
+     hands it over in the same shape as a written recipe, so the timer, the
+     stages, the Chinese subtitles and the waiting chat all keep working —
+     none of that machinery can tell the difference. */
+  improvise_recipe({ dish, dish_zh, minutes, ingredients, steps }){
+    const list = Array.isArray(steps) ? steps : [];
+    if(!dish) return { error:"What is the dish called? Ask them." };
+    if(!list.length) return { error:"No steps came through. Work out the steps first, then call this once with all of them." };
+
+    const clean = list.slice(0, 12).map(x => ({
+      text:    String(x && x.text || "").trim(),
+      zh:      String(x && x.zh   || "").trim(),
+      wait:    Math.min(3600, Math.max(0, Math.round(Number(x && x.wait) || 0))),
+      label:   String(x && x.label    || "Cooking"),
+      labelZh: String(x && x.label_zh || "烹調中"),
+      tip:     String(x && x.tip      || ""),
+      tipZh:   String(x && x.tip_zh   || "")
+    })).filter(x => x.text);
+    if(!clean.length) return { error:"Those steps came through empty. Say them again." };
+
+    recipe = {
+      id:"improvised", improvised:true,
+      en: String(dish), zh: String(dish_zh || dish),
+      minutes: Math.max(0, Math.round(Number(minutes) || 0)),
+      ingredients: (Array.isArray(ingredients) ? ingredients : []).map(i => ({
+        en: String(i && i.en || i || ""), zh: String(i && i.zh || i && i.en || i || "") })),
+      steps: clean
+    };
+    stepIdx = 0; matched = [];
+    clearTimer(); setStage("cooking"); saveState();
+    say("RECIPE", recipe.en + " — " + clean.length + " steps · improvised",
+        "act", recipe.zh + " — 共 " + clean.length + " 步 · 即席");
+    if(clean[0].wait) startTimer(clean[0].wait, clean[0].label, clean[0].labelZh);
+    return { dish:recipe.en, dish_zh:recipe.zh, total_steps:clean.length, improvised:true,
+             ingredients: recipe.ingredients.map(i => i.en), ...stepPayload() };
+  },
 
   // Called BEFORE the spoken reply, never after. A tool result always prompts
   // a new turn from the model, so a subtitle tool called after speaking makes
@@ -661,6 +963,25 @@ const TOOL_SCHEMA = [
     parameters:{ type:"object", properties:{
       dish:{ type:"string", description:"Dish name, Mandarin or English, e.g. 泡麵升級版" }
     }, required:["dish"] } },
+  { type:"function", name:"improvise_recipe",
+    description:"Cook something the book does not have. ASK FIRST — say you have not made it before and check they want you to try — and only call this after they say yes. Pass the whole recipe in one call: everything here is what you will be reading out loud, so write it the way you would say it.",
+    parameters:{ type:"object", properties:{
+      dish:{ type:"string", description:"Dish name in English" },
+      dish_zh:{ type:"string", description:"The same name in Traditional Chinese" },
+      minutes:{ type:"number", description:"Rough total time in minutes" },
+      ingredients:{ type:"array", description:"What they need",
+        items:{ type:"object", properties:{ en:{type:"string"}, zh:{type:"string"} }, required:["en","zh"] } },
+      steps:{ type:"array", description:"Four to eight steps, in order, one action each",
+        items:{ type:"object", properties:{
+          text:{ type:"string", description:"The line you will say out loud, in English" },
+          zh:{ type:"string", description:"The same line in Traditional Chinese" },
+          wait:{ type:"number", description:"Seconds of hands-free waiting this step creates. 0 if none. Be honest — this is what the timer runs on." },
+          label:{ type:"string", description:"Short label for the timer, e.g. Water coming to a boil" },
+          label_zh:{ type:"string", description:"The same label in Traditional Chinese" },
+          tip:{ type:"string", description:"Something small and useful they could do during that wait" },
+          tip_zh:{ type:"string", description:"The same tip in Traditional Chinese" }
+        }, required:["text","zh"] } }
+    }, required:["dish","dish_zh","steps"] } },
   { type:"function", name:"next_step",
     description:"Move to the next step. Only when they say they have finished the current one. Starts that step's timer automatically.",
     parameters:{ type:"object", properties:{} } },
@@ -718,6 +1039,17 @@ The tool hands you step one; in that same turn, show its instruction_zh as the s
 read step one out loud. Only then stop and wait.
 The same goes for suggest_dishes: once they pick one of the matches, go straight to start_recipe.
 
+A DISH THAT IS NOT IN THE BOOK:
+The book holds ten dishes. When they name something else, do not pretend it is in there and
+do not steer them onto a different dish — that is the moment a kitchen companion becomes
+useless. Say it plainly in one short line: you have not made this one before, do they want
+you to try it with them? If they say yes, work the whole thing out — four to eight steps in
+order, and for each one, honestly how many seconds their hands are free — then call
+improvise_recipe ONCE with all of it, and read step one out in the same turn.
+Improvised cooking stays ordinary and safe: chicken and pork cooked through, heat where a
+home cook would put it, no technique you cannot explain in a single sentence. If you are not
+sure a dish can be done safely in a home kitchen, say so and offer something close instead.
+
 SUBTITLES — how every turn of yours is shaped:
 They do not read English well, and the screen is how they follow you. So each time it is your turn:
 1. Work out what you want to say.
@@ -743,6 +1075,8 @@ const GREETING_ZH = "我在喔，今天想煮什麼？";
 
 const KEYTERMS = [
   "泡麵","泡麵升級版","番茄炒蛋","炒飯","蒜香奶油炒飯",
+  "三杯雞","滷肉飯","魯肉飯","麻婆豆腐","玉米濃湯","味噌湯","味噌豆腐湯","香煎雞腿排","雞腿排","炒青菜","蒜炒時蔬",
+  "豆腐","絞肉","五花肉","九層塔","洋蔥","玉米","味噌","高麗菜","空心菜",
   "雞蛋","番茄","青菜","蔥花","辣油","蒜頭","奶油","醬油","冷飯",
   "下一步","好了","再講一次","沒聽到","計時","幾分鐘","水滾了","關火","可以了嗎",
   "upgraded instant noodles","tomato egg","garlic butter fried rice",
@@ -1055,7 +1389,7 @@ function sendMicChunk(arrayBuffer){
    screenshot of the corner is enough to tell what happened. */
 function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 9 · 09-10 · " + txt;
+  if(el) el.textContent = "build 10 · 09-10 · " + txt;
 }
 
 function toBase64(arrayBuffer){
