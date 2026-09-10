@@ -197,7 +197,7 @@
   </div>
 </div>
 
-<div class="build">build 10 · 09-10</div>
+<div class="build">build 11 · 09-10</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -787,7 +787,7 @@ function ringTimer(){
   say("TIMER", (timerLabel.textContent || "Timer") + " — done", "act",
       (timerLabelZh.textContent || "計時") + " — 時間到");
   if(stage === "waiting") setStage("cooking");
-  nudge("[the " + (timerLabel.textContent || "timer") + " timer just finished. Tell them, warmly, in one short line.]");
+  nudge();
 }
 
 function clearTimer(){
@@ -1039,6 +1039,15 @@ The tool hands you step one; in that same turn, show its instruction_zh as the s
 read step one out loud. Only then stop and wait.
 The same goes for suggest_dishes: once they pick one of the matches, go straight to start_recipe.
 
+WHEN A TIMER ENDS:
+A kitchen gives you no way to tap someone on the shoulder, so when a timer runs out you will
+hear the line "The timer just finished." That is the clock speaking, not them. Do not thank
+them for telling you, and do not treat it as an answer to anything you asked.
+Do what the friend at the counter would do. You already know what that timer was for — it
+came with the step you read out — so name the thing itself, not the timer: "water should be
+going by now" beats "your timer finished". Then ask how it looks and stop. One short line;
+their hands are probably still busy.
+
 A DISH THAT IS NOT IN THE BOOK:
 The book holds ten dishes. When they name something else, do not pretend it is in there and
 do not steer them onto a different dish — that is the moment a kitchen companion becomes
@@ -1108,18 +1117,88 @@ function agentAudioEndsSoon(){
 }
 function openGate(){ clearTimeout(gateTimer); agentSpeaking = false; setTurn("you"); }
 
-/* Waking it up when a timer ends. The message shape is the one thing here
-   not confirmed against the API, so if it is refused we put the refusal on
-   screen rather than letting the moment pass in silence. */
-let nudgeAt = 0;
-function nudge(text){
-  if(!ws || ws.readyState !== WebSocket.OPEN) return;
+/* ---- waking it up when a timer ends ------------------------------
+   The whole product rests on this moment: the pot is boiling, their hands
+   are free, and the friend leaning on the counter should be the one to
+   speak first. But this API takes audio and nothing else. input.text,
+   response.create and a forged tool.result are all refused or ignored,
+   and greeting is immutable after the first session.update — every door
+   is shut except the microphone.
+
+   So we go in through the microphone. At connect time we open one
+   throwaway session and have it read a single line out loud, keep that
+   audio in memory, and play it back down the wire when the clock runs
+   out. The API hears a person talking. It is its own voice, borrowed.
+   ------------------------------------------------------------------ */
+
+const WAKE_LINE = "The timer just finished.";
+let wakePcm = null, waking = false;
+
+async function mintWakePhrase(){
+  if(wakePcm && wakePcm.length) return;          // already have it
   try{
-    nudgeAt = Date.now();
-    ws.send(JSON.stringify({ type:"input.text", text }));
-  }catch(e){
-    say("SYSTEM", "Could not wake the agent: " + e.message, "warn", "叫不動代理：" + e.message);
+    const res = await fetch(TOKEN_ENDPOINT);
+    if(!res.ok) return;
+    const { token } = await res.json();
+    if(!token) return;
+
+    const url = new URL(AGENT_WS);
+    url.searchParams.set("token", token);
+    const w = new WebSocket(url);
+    const chunks = [];
+
+    await new Promise((resolve) => {
+      const done = () => { try{ w.close(); }catch(e){} resolve(); };
+      w.onopen = () => w.send(JSON.stringify({ type:"session.update", session:{
+        system_prompt: "Say nothing at all unless spoken to.",
+        greeting: WAKE_LINE,
+        input:{ format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } },
+        output:{ voice:"anna", format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } }
+      }}));
+      w.onmessage = (raw) => {
+        let ev; try{ ev = JSON.parse(raw.data); }catch(e){ return; }
+        if(ev.type === "reply.audio") chunks.push(ev.data);
+        if(ev.type === "reply.done") done();
+      };
+      w.onerror = done;
+      setTimeout(done, 15000);
+    });
+
+    if(!chunks.length) return;
+    const parts = chunks.map(b64 => {
+      const bin = atob(b64); const u = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i);
+      return new Int16Array(u.buffer);
+    });
+    let total = 0; for(const part of parts) total += part.length;
+    const all = new Int16Array(total);
+    let o = 0; for(const part of parts){ all.set(part, o); o += part.length; }
+    wakePcm = all;
+  }catch(e){ wakePcm = null; }
+}
+
+function nudge(){
+  if(!ws || ws.readyState !== WebSocket.OPEN) return;
+  if(!wakePcm || !wakePcm.length){
+    // Recording never came back. Say so rather than letting the moment pass.
+    say("SYSTEM", "Timer done — say something and it will pick up from there.", "warn",
+        "時間到了。開口跟圓圓說一聲，它就會接下去。");
+    return;
   }
+
+  // Hold the real microphone shut so the two streams do not talk over each other.
+  waking = true;
+  const CH = Math.round(SAMPLE_RATE * CHUNK_MS / 1000);
+  for(let i = 0; i < wakePcm.length; i += CH){
+    const slice = wakePcm.slice(i, i + CH);
+    ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(slice.buffer) }));
+  }
+  // Then silence, so its turn detector knows the line has ended.
+  const quiet = new Int16Array(CH);
+  for(let k = 0; k < Math.ceil(1400 / CHUNK_MS); k++)
+    ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(quiet.buffer) }));
+
+  setTimeout(() => { waking = false; }, 1200);
 }
 
 async function start(){
@@ -1198,6 +1277,7 @@ async function start(){
         if(stage === "idle") setStage("picking");
         // The greeting is spoken before it can call a tool, so seed its subtitle.
         setTimeout(() => subtitle(GREETING_ZH), 700);
+        mintWakePhrase();   // record the wake-up line in the background
         try{
           await openMic();
         }catch(err){
@@ -1248,13 +1328,7 @@ async function start(){
 
       case "session.error": {
         const msg = `${ev.code || "error"}: ${ev.message || "unknown"}${ev.param ? " (" + ev.param + ")" : ""}`;
-        // If this lands right after a timer nudge, that is the API refusing the
-        // wake-up message — say so in the transcript so it is not a mystery.
-        if(Date.now() - nudgeAt < 4000){
-          say("SYSTEM", "Timer wake-up refused by the API — " + msg, "warn",
-              "計時器主動開口被 API 拒絕 — " + msg);
-          nudgeAt = 0;
-        } else showError(msg);
+        showError(msg);
         break;
       }
 
@@ -1375,7 +1449,7 @@ async function openMic(){
 /* The one door microphone audio leaves by, whichever node produced it. */
 function sendMicChunk(arrayBuffer){
   if(!ws || ws.readyState !== WebSocket.OPEN) return;
-  if(agentSpeaking){ setLevel(-1); return; }   // it is talking — do not feed it its own voice
+  if(agentSpeaking || waking){ setLevel(-1); return; }   // it is talking, or we are — do not mix streams
 
   const pcm = new Int16Array(arrayBuffer);
   let peak = 0;
@@ -1389,7 +1463,7 @@ function sendMicChunk(arrayBuffer){
    screenshot of the corner is enough to tell what happened. */
 function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 10 · 09-10 · " + txt;
+  if(el) el.textContent = "build 11 · 09-10 · " + txt;
 }
 
 function toBase64(arrayBuffer){
