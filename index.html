@@ -195,7 +195,7 @@
 </div>
 
 <div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
-<div class="build">build 18 · 09-17</div>
+<div class="build">build 19 · 09-17</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -1026,7 +1026,7 @@ You are here for company first and instructions second. Cooking alone is boring 
 BE QUICK:
 Answer the instant they stop talking. No warm-up words ("okay, so", "great question"), no repeating
 back what they just said, no announcing what you are about to do. Lead with the useful part.
-When a tool is needed, call it straight away instead of talking first. Short and immediate beats complete.
+Short and immediate beats complete.
 
 NOTHING IS ON THEIR SCREEN. They cannot read the recipe; you are holding it for them.
 So never say "as you can see" or "look at the step". Say it out loud, plainly, and only one step at a time.
@@ -1074,10 +1074,13 @@ Improvised cooking stays ordinary and safe: chicken and pork cooked through, hea
 home cook would put it, no technique you cannot explain in a single sentence. If you are not
 sure a dish can be done safely in a home kitchen, say so and offer something close instead.
 
-WHAT LANGUAGE YOU SPEAK:
-Whatever language they just spoke to you in. English, Spanish, Japanese, Mandarin, anything —
-match them from their very first sentence, without being asked and without remarking on it.
-If you cannot tell, use English.
+WHAT LANGUAGE YOU SPEAK OUT LOUD:
+Your voice can only pronounce languages written in the Latin alphabet. Chinese, Japanese or Korean
+text read by it comes out as gibberish.
+- They speak English, Spanish, French, Portuguese, Italian or German: answer out loud in that language,
+  from their very first sentence, without remarking on it.
+- They speak Mandarin, Chinese, Japanese, Korean, or you cannot tell: answer out loud in English.
+The words you say out loud never contain a single Chinese, Japanese or Korean character.
 
 YOU ARE NOT A MANUAL:
 Cooking alone is boring. That is the entire reason you exist, so act like it. React to what
@@ -1090,9 +1093,10 @@ SUBTITLES — how every turn of yours is shaped:
 The person holding this phone reads Traditional Chinese, and the screen is how they follow you.
 So each time it is your turn:
 1. Work out what you want to say.
-2. Call show_subtitle ONCE with the Traditional Chinese of that line — always Chinese on screen,
-   whatever language you are about to speak.
-3. Say that same line out loud, in their language.
+2. Call the show_subtitle function ONCE with the Traditional Chinese of that line — always Chinese
+   on screen, whatever language you are about to speak. It is a real function call: never type its
+   name, braces or the Chinese into your reply. Everything in your reply text is read aloud.
+3. Say that same line out loud, in the spoken language above.
 4. Stop. Wait for them. Do not start another turn on your own.
 Never call show_subtitle after you have spoken, and never twice in the same turn.
 When you are reading out a recipe step, pass the instruction_zh the tool gave you, word for word.
@@ -1122,6 +1126,16 @@ const KEYTERMS = [
 ];
 
 /* ---- the voice session ------------------------------------------- */
+
+/* Spoken text that the English voice cannot say: a tool call typed out as
+   words, or a line that is mostly Chinese / Japanese / Korean characters. */
+let mutedReply = null, guardReply = null, guardText = "";
+function spokenIsGarbled(t){
+  if(/show_subtitle|subtitle\s*[{(]/i.test(t)) return true;
+  const cjk = (t.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length;
+  const latin = (t.match(/[A-Za-z]/g) || []).length;
+  return cjk > 0 && cjk >= latin;
+}
 
 let ws = null, audioCtx = null, micStream = null, workletNode = null, sourceNode = null;
 let playCtx = null, playGain = null, playHead = 0;
@@ -1325,14 +1339,28 @@ async function start(){
 
       // Undocumented but real: the agent's line streams in word by word.
       case "transcript.agent.delta": {
+        // Safety net. Seen on the live API 9/17: the model sometimes writes the
+        // show_subtitle call as plain text, and the English voice reads it out —
+        // "show subtitle zh" plus the Chinese, which comes out as gibberish before
+        // the real English line. The words arrive right behind the first audio, so
+        // the rest of that reply can still be held back; its Chinese goes on screen.
+        if(ev.reply_id !== guardReply){ guardReply = ev.reply_id; guardText = ""; }
+        guardText += (ev.delta ?? ev.text ?? "");
+        if(ev.reply_id && mutedReply !== ev.reply_id && spokenIsGarbled(guardText)) mutedReply = ev.reply_id;
+        if(ev.reply_id && ev.reply_id === mutedReply){
+          const zh = (guardText.match(/[\u3400-\u9fff，。？！、：「」]+/g) || []).join("");
+          if(zh) subtitle(zh);
+        }
         const d = ev.text || "";
         agentBuf = (agentBuf && d.startsWith(agentBuf)) ? d : agentBuf + d;
         showAgentPartial(agentBuf);
         break;
       }
-      case "transcript.agent": commitAgent(ev.text || ""); break;
+      case "transcript.agent":
+        commitAgent(ev.reply_id && ev.reply_id === mutedReply ? "" : (ev.text || "")); break;
 
       case "reply.audio":
+        if(ev.reply_id && ev.reply_id === mutedReply) break;   // garbled — see above
         agentAudioStart();
         playChunk(ev.data);
         break;
@@ -1494,7 +1522,7 @@ function sendMicChunk(arrayBuffer){
    screenshot of the corner is enough to tell what happened. */
 function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 18 · 09-17 · " + txt;
+  if(el) el.textContent = "build 19 · 09-17 · " + txt;
 }
 
 function toBase64(arrayBuffer){
