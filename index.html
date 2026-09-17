@@ -1,4 +1,15 @@
 <!doctype html>
+<!--
+  YuanYuan AI 圓圓 — a voice companion that cooks with you.
+
+  Copyright (c) 2026 Yu-Chi Chang 張妤綺 (ropa5236). All rights reserved.
+  Released under the MIT License — see LICENSE. If you reuse any part of
+  this file, the copyright notice above must travel with it.
+
+  Original work, created for the AssemblyAI Voice Agent Hackathon,
+  September 2026. Development history, with timestamps:
+  https://github.com/ropa5236/yuanyuan-voice-works/commits/main
+-->
 <html lang="en" translate="no">
 <head>
 <meta charset="utf-8" />
@@ -120,6 +131,10 @@
   /* ---- bottom ---- */
   .build{position:fixed;right:10px;bottom:5px;z-index:60;font-size:10px;letter-spacing:.05em;
     color:var(--ink);opacity:.32;pointer-events:none;user-select:none}
+  /* Attribution. Never rewritten by script, so it survives whatever the
+     build stamp below it is doing. */
+  .credit{position:fixed;right:10px;bottom:19px;z-index:60;font-size:10px;letter-spacing:.05em;
+    color:var(--ink);opacity:.30;pointer-events:none;user-select:none}
   .bar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 26%);
     padding:22px 22px 26px;display:flex;flex-direction:column;align-items:center;gap:11px}
   button.mic{display:flex;align-items:center;gap:11px;background:var(--accent);color:#1c1204;border:0;
@@ -179,7 +194,8 @@
   </button>
 </div>
 
-<div class="build">build 12 · 09-11</div>
+<div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
+<div class="build">build 15 · 09-17</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -775,10 +791,15 @@ function clearTimer(){
 }
 
 /* Three short beeps, the way a kitchen timer does it — a soft two-note chime
-   is easy to miss with a fan on and a pan going. */
+   is easy to miss with a fan on and a pan going.
+
+   It rides the playback context on purpose. A fresh AudioContext created here
+   starts suspended, because a timer finishing is not a user gesture — that is
+   a silent chime on every phone. playCtx is already running. */
 function chime(){
   try{
-    const c = new AudioContext();
+    const c = playCtx || new AudioContext();
+    if(c.state === "suspended") c.resume();
     for(let i = 0; i < 3; i++){
       const o = c.createOscillator(), g = c.createGain();
       o.type = "square"; o.frequency.value = 2000;
@@ -790,7 +811,7 @@ function chime(){
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
       o.start(t); o.stop(t + 0.16);
     }
-    setTimeout(() => c.close(), 1600);
+    if(c !== playCtx) setTimeout(() => { try{ c.close(); }catch(e){} }, 1600);
   }catch(e){}
 }
 
@@ -1098,7 +1119,7 @@ let running = false;
    which meant half of what they said went missing — we keep listening while
    it speaks but only let through something clearly louder than its own voice
    coming back off the speaker. That is a person cutting in, not an echo. */
-const BARGE_LEVEL = 0.25;
+const BARGE_LEVEL = 0.12;
 let agentSpeaking = false, gateTimer = null;
 
 function agentAudioStart(){
@@ -1197,6 +1218,8 @@ function nudge(){
 }
 
 async function start(){
+  unlockPlayback();          // must run inside the tap, before the first await
+  cuts = 0;
   showError("");
   setStatus("Connecting… 連線中", "connecting");
   micBtn.disabled = true;
@@ -1216,12 +1239,12 @@ async function start(){
   }
 
   try{
-    // echoCancellation puts iOS into its call profile, which routes playback to
-    // the earpiece and quietly caps the volume — that is why it sounded small
-    // and kept fading. autoGainControl is what made it fade in and out. Both off:
-    // the echo is handled by the level gate above instead.
+    // Do not turn echoCancellation off to chase volume. Tried it in build 12:
+    // iOS drops the whole audio session into a record-only profile and MUTES
+    // playback outright — no voice, no chime, nothing. The volume lift belongs
+    // in our own graph (OUT_GAIN), never in the microphone constraints.
     micStream = await navigator.mediaDevices.getUserMedia({
-      audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+      audio:{ echoCancellation:true, noiseSuppression:false, autoGainControl:true }
     });
   }catch(e){
     micBtn.disabled = false;
@@ -1304,7 +1327,7 @@ async function start(){
       case "reply.done":
         flushPlayback();          // the tail packets, before anything reads playHead
         if(agentLine) commitAgent(agentBuf);
-        if(ev.status === "interrupted"){ stopPlayback(); openGate(); }
+        if(ev.status === "interrupted"){ stopPlayback(false); openGate(); stampCut(); }
         else agentAudioEndsSoon();
         break;
 
@@ -1461,9 +1484,12 @@ function sendMicChunk(arrayBuffer){
 
 /* Which audio path actually took, printed next to the build stamp — so a
    screenshot of the corner is enough to tell what happened. */
-function stampAudio(txt){
+let stampBase = "", cuts = 0;
+function stampCut(){ cuts++; stampAudio(stampBase + " · cut " + cuts, true); }
+function stampAudio(txt, keepBase){
+  if(!keepBase) stampBase = txt;
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 12 · 09-11 · " + txt;
+  if(el) el.textContent = "build 15 · 09-17 · " + txt;
 }
 
 function toBase64(arrayBuffer){
@@ -1504,15 +1530,37 @@ function playChunk(b64){
 /* Hand whatever has arrived to the speakers as one continuous block.
    Called on every ~80 ms of audio, and once more when the reply ends so the
    last few packets are not left sitting in the buffer. */
+/* The speaker context is made once, inside the tap on the button, and kept
+   for the whole session. It used to be created the moment the first audio
+   packet arrived — inside a WebSocket message, which is not a user gesture —
+   so on phones it was born "suspended" and played nothing at all. And every
+   time a reply was interrupted it was closed and re-created, again outside a
+   gesture, so after the first cut-off the voice never came back. */
+let liveSources = new Set();
+
+function makePlayCtx(){
+  playCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
+  playGain = playCtx.createGain();
+  playGain.gain.value = 1;
+  playGain.connect(playCtx.destination);
+  playHead = 0;
+}
+
+function unlockPlayback(){
+  try{
+    if(!playCtx) makePlayCtx();
+    if(playCtx.state === "suspended") playCtx.resume();
+    // iOS only truly opens the output after something has been played from a tap.
+    const b = playCtx.createBuffer(1, 1, SAMPLE_RATE);
+    const s = playCtx.createBufferSource();
+    s.buffer = b; s.connect(playGain); s.start(0);
+  }catch(e){}
+}
+
 function flushPlayback(){
   if(!pendingLen) return;
-  if(!playCtx){
-    playCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
-    playGain = playCtx.createGain();
-    playGain.gain.value = 1;
-    playGain.connect(playCtx.destination);
-    playHead = playCtx.currentTime + PREBUFFER;
-  }
+  if(!playCtx) makePlayCtx();
+  if(playCtx.state === "suspended") playCtx.resume();
 
   const buf = playCtx.createBuffer(1, pendingLen, SAMPLE_RATE);
   const ch = buf.getChannelData(0);
@@ -1525,6 +1573,8 @@ function flushPlayback(){
   const src = playCtx.createBufferSource();
   src.buffer = buf;
   src.connect(playGain);
+  liveSources.add(src);
+  src.onended = () => liveSources.delete(src);
 
   const now = playCtx.currentTime;
   // Underran while the network caught up — restart the lead rather than
@@ -1535,11 +1585,17 @@ function flushPlayback(){
   playHead += buf.duration;
 }
 
-function stopPlayback(){
+/* Interrupted: silence what is queued, but keep the context open so the
+   next reply can still be heard. Only a full stop closes it. */
+function stopPlayback(closeCtx){
   pendingPcm = []; pendingLen = 0;
-  if(!playCtx) return;
-  playCtx.close();
-  playCtx = null; playGain = null; playHead = 0;
+  for(const src of liveSources){ try{ src.stop(); }catch(e){} }
+  liveSources.clear();
+  playHead = 0;
+  if(closeCtx && playCtx){
+    try{ playCtx.close(); }catch(e){}
+    playCtx = null; playGain = null;
+  }
 }
 
 /* ---- teardown ----------------------------------------------------
@@ -1555,7 +1611,7 @@ function stop(){
   try{ micStream && micStream.getTracks().forEach(t => t.stop()); }catch(e){}
   try{ audioCtx && audioCtx.close(); }catch(e){}
   workletNode = sourceNode = micStream = audioCtx = null;
-  stopPlayback();
+  stopPlayback(true);
   openGate();
   setTurn(null);
   setLevel(-1);

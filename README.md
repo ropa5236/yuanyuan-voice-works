@@ -77,6 +77,20 @@ To run your own copy: fork, deploy to Cloudflare Pages, and set `ASSEMBLYAI_API_
 
 In progress. Submission due 30 September 2026.
 
+## Author
+
+**Yu-Chi Chang 張妤綺** (GitHub: [@ropa5236](https://github.com/ropa5236)) — Taiwan.
+
+Original work, conceived and built for the AssemblyAI Voice Agent Hackathon, September 2026.
+Every design decision, every bug and every fix is in the commit history of this
+repository, timestamped from 9 September 2026 onward:
+[commits/main](https://github.com/ropa5236/yuanyuan-voice-works/commits/main).
+
 ## License
 
-MIT
+MIT — Copyright (c) 2026 Yu-Chi Chang 張妤綺. See [LICENSE](LICENSE).
+
+You are free to use, modify and redistribute this code, **provided the copyright
+notice and this permission notice are kept in all copies**. That condition is not
+decorative: strip the attribution and you are no longer using it under the MIT
+License.
