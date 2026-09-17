@@ -195,7 +195,7 @@
 </div>
 
 <div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
-<div class="build">build 16 · 09-17</div>
+<div class="build">build 17 · 09-17</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -741,7 +741,7 @@ function setTurn(who){
   document.getElementById("turnText").textContent =
     who === "agent" ? "YuanYuan is speaking" : "Your turn";
   document.getElementById("turnZh").textContent =
-    who === "agent" ? "圓圓說話中 · 大聲說可以插話"
+    who === "agent" ? "圓圓說話中 · 麥克風暫停"
                     : "輪到你了 · 慢慢講，停頓沒關係";
 }
 
@@ -1115,19 +1115,18 @@ let playCtx = null, playGain = null, playHead = 0;
 let pendingPcm = [], pendingLen = 0;
 let running = false;
 
-/* The echo gate. On speakers the agent hears itself, gets transcribed as the
-   cook, and answers itself. Rather than shutting the microphone completely —
-   which meant half of what they said went missing — we keep listening while
-   it speaks but only let through something clearly louder than its own voice
-   coming back off the speaker. That is a person cutting in, not an echo. */
-const BARGE_LEVEL = 0.12;
-let agentSpeaking = false, gateTimer = null;
+/* The echo gate. On speakers the agent hears itself, gets transcribed as
+   the cook, and answers itself. Unless they are on headphones we simply
+   stop sending microphone frames while its voice is playing. */
+let agentSpeaking = false, gateTimer = null, headphones = false;
 
 function agentAudioStart(){
   setTurn("agent");
+  if(headphones) return;
   agentSpeaking = true; clearTimeout(gateTimer);
 }
 function agentAudioEndsSoon(){
+  if(headphones){ setTurn("you"); return; }
   const remainMs = playCtx ? Math.max(0, (playHead - playCtx.currentTime) * 1000) : 0;
   clearTimeout(gateTimer);
   gateTimer = setTimeout(() => { agentSpeaking = false; setTurn("you"); }, remainMs + 350);
@@ -1219,8 +1218,6 @@ function nudge(){
 }
 
 async function start(){
-  unlockPlayback();          // must run inside the tap, before the first await
-  cuts = 0;
   showError("");
   setStatus("Connecting… 連線中", "connecting");
   micBtn.disabled = true;
@@ -1240,10 +1237,8 @@ async function start(){
   }
 
   try{
-    // Do not turn echoCancellation off to chase volume. Tried it in build 12:
-    // iOS drops the whole audio session into a record-only profile and MUTES
-    // playback outright — no voice, no chime, nothing. The volume lift belongs
-    // in our own graph (OUT_GAIN), never in the microphone constraints.
+    // Audio path is build 11's, restored as-is: the last version whose voice
+    // sounded right on a phone. Do not change these constraints.
     micStream = await navigator.mediaDevices.getUserMedia({
       audio:{ echoCancellation:true, noiseSuppression:false, autoGainControl:true }
     });
@@ -1271,9 +1266,9 @@ async function start(){
           keyterms: KEYTERMS,
           // People pause to breathe mid-sentence. A second was still cutting them
           // off, so give them a second and a half, and three seconds before the
-          // turn closes on its own. interrupt_response is on — the level gate in
-          // sendMicChunk is what keeps the echo from triggering it.
-          turn_detection:{ vad_threshold:0.5, min_silence:1500, max_silence:3000, interrupt_response: true }
+          // turn closes on its own. interrupt_response stays off: the microphone
+          // is shut while it talks (build 11 audio), so it cannot cut itself off.
+          turn_detection:{ vad_threshold:0.5, min_silence:1500, max_silence:3000, interrupt_response: false }
         },
         output:{ voice:"anna", format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } },
         tools: TOOL_SCHEMA
@@ -1328,7 +1323,7 @@ async function start(){
       case "reply.done":
         flushPlayback();          // the tail packets, before anything reads playHead
         if(agentLine) commitAgent(agentBuf);
-        if(ev.status === "interrupted"){ stopPlayback(false); openGate(); stampCut(); }
+        if(ev.status === "interrupted"){ stopPlayback(); openGate(); }
         else agentAudioEndsSoon();
         break;
 
@@ -1468,29 +1463,21 @@ async function openMic(){
 /* The one door microphone audio leaves by, whichever node produced it. */
 function sendMicChunk(arrayBuffer){
   if(!ws || ws.readyState !== WebSocket.OPEN) return;
-  if(waking){ setLevel(-1); return; }        // that is us playing the wake line
+  if(agentSpeaking || waking){ setLevel(-1); return; }   // it is talking, or we are — do not mix streams
 
   const pcm = new Int16Array(arrayBuffer);
   let peak = 0;
   for(let i = 0; i < pcm.length; i += 6){ const a = Math.abs(pcm[i]); if(a > peak) peak = a; }
-  const level = peak / 32768;
-  setLevel(agentSpeaking ? -1 : level);
-
-  // While it is speaking, only a voice clearly louder than the echo gets
-  // through — so you can cut in mid-sentence without it answering itself.
-  if(agentSpeaking && level < BARGE_LEVEL) return;
+  setLevel(peak / 32768);
 
   ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(arrayBuffer) }));
 }
 
 /* Which audio path actually took, printed next to the build stamp — so a
    screenshot of the corner is enough to tell what happened. */
-let stampBase = "", cuts = 0;
-function stampCut(){ cuts++; stampAudio(stampBase + " · cut " + cuts, true); }
-function stampAudio(txt, keepBase){
-  if(!keepBase) stampBase = txt;
+function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 16 · 09-17 · " + txt;
+  if(el) el.textContent = "build 17 · 09-17 · " + txt;
 }
 
 function toBase64(arrayBuffer){
@@ -1514,9 +1501,6 @@ function toBase64(arrayBuffer){
 
 const PREBUFFER = 0.18;   // seconds of lead before the first chunk plays
 const BATCH_MS   = 80;    // gather the 10 ms packets into one block before scheduling
-const OUT_GAIN   = 2.8;   // the API's own volume field turned out to be inverted,
-                          // so the lift happens here, through tanh — quiet parts get
-                          // the full 2.8x, loud parts round off instead of clipping.
 
 function playChunk(b64){
   if(!b64) return;
@@ -1531,51 +1515,25 @@ function playChunk(b64){
 /* Hand whatever has arrived to the speakers as one continuous block.
    Called on every ~80 ms of audio, and once more when the reply ends so the
    last few packets are not left sitting in the buffer. */
-/* The speaker context is made once, inside the tap on the button, and kept
-   for the whole session. It used to be created the moment the first audio
-   packet arrived — inside a WebSocket message, which is not a user gesture —
-   so on phones it was born "suspended" and played nothing at all. And every
-   time a reply was interrupted it was closed and re-created, again outside a
-   gesture, so after the first cut-off the voice never came back. */
-let liveSources = new Set();
-
-function makePlayCtx(){
-  playCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
-  playGain = playCtx.createGain();
-  playGain.gain.value = 1;
-  playGain.connect(playCtx.destination);
-  playHead = 0;
-}
-
-function unlockPlayback(){
-  try{
-    if(!playCtx) makePlayCtx();
-    if(playCtx.state === "suspended") playCtx.resume();
-    // iOS only truly opens the output after something has been played from a tap.
-    const b = playCtx.createBuffer(1, 1, SAMPLE_RATE);
-    const s = playCtx.createBufferSource();
-    s.buffer = b; s.connect(playGain); s.start(0);
-  }catch(e){}
-}
-
 function flushPlayback(){
   if(!pendingLen) return;
-  if(!playCtx) makePlayCtx();
-  if(playCtx.state === "suspended") playCtx.resume();
+  if(!playCtx){
+    playCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
+    playGain = playCtx.createGain();
+    playGain.gain.value = 1;
+    playGain.connect(playCtx.destination);
+    playHead = playCtx.currentTime + PREBUFFER;
+  }
 
   const buf = playCtx.createBuffer(1, pendingLen, SAMPLE_RATE);
   const ch = buf.getChannelData(0);
   let o = 0;
-  for(const p of pendingPcm){
-    for(let i=0;i<p.length;i++) ch[o++] = Math.tanh(p[i] / 32768 * OUT_GAIN);
-  }
+  for(const p of pendingPcm){ for(let i=0;i<p.length;i++) ch[o++] = p[i] / 32768; }
   pendingPcm = []; pendingLen = 0;
 
   const src = playCtx.createBufferSource();
   src.buffer = buf;
   src.connect(playGain);
-  liveSources.add(src);
-  src.onended = () => liveSources.delete(src);
 
   const now = playCtx.currentTime;
   // Underran while the network caught up — restart the lead rather than
@@ -1586,17 +1544,11 @@ function flushPlayback(){
   playHead += buf.duration;
 }
 
-/* Interrupted: silence what is queued, but keep the context open so the
-   next reply can still be heard. Only a full stop closes it. */
-function stopPlayback(closeCtx){
+function stopPlayback(){
   pendingPcm = []; pendingLen = 0;
-  for(const src of liveSources){ try{ src.stop(); }catch(e){} }
-  liveSources.clear();
-  playHead = 0;
-  if(closeCtx && playCtx){
-    try{ playCtx.close(); }catch(e){}
-    playCtx = null; playGain = null;
-  }
+  if(!playCtx) return;
+  playCtx.close();
+  playCtx = null; playGain = null; playHead = 0;
 }
 
 /* ---- teardown ----------------------------------------------------
@@ -1612,7 +1564,7 @@ function stop(){
   try{ micStream && micStream.getTracks().forEach(t => t.stop()); }catch(e){}
   try{ audioCtx && audioCtx.close(); }catch(e){}
   workletNode = sourceNode = micStream = audioCtx = null;
-  stopPlayback(true);
+  stopPlayback();
   openGate();
   setTurn(null);
   setLevel(-1);
