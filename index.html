@@ -195,7 +195,7 @@
 </div>
 
 <div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
-<div class="build">build 17 · 09-17</div>
+<div class="build">build 18 · 09-17</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -778,11 +778,15 @@ function ringTimer(){
   clearInterval(timerId); timerId = null;
   timerEl.classList.add("rang");
   timerState.textContent = "Time's up 時間到";
+  const rangAt = Date.now();
   chime();
   say("TIMER", (timerLabel.textContent || "Timer") + " — done", "act",
       (timerLabelZh.textContent || "計時") + " — 時間到");
   if(stage === "waiting") setStage("cooking");
-  nudge();
+  // Let the beeping finish before Yuan AI speaks, so its voice is not buried
+  // under the alarm. If they already said something while it rang, it is
+  // their conversation now — do not talk over them.
+  setTimeout(() => { if(lastUserAt < rangAt) nudge(); }, CHIME_SECONDS * 1000);
 }
 
 function clearTimer(){
@@ -790,28 +794,32 @@ function clearTimer(){
   timerEl.classList.remove("on","rang");
 }
 
-/* Three short beeps, the way a kitchen timer does it — a soft two-note chime
-   is easy to miss with a fan on and a pan going.
+/* A kitchen timer going off: three sharp beeps every second, for eight
+   seconds — long enough to hear from the sink with the fan on.
 
    It rides the playback context on purpose. A fresh AudioContext created here
    starts suspended, because a timer finishing is not a user gesture — that is
    a silent chime on every phone. playCtx is already running. */
+const CHIME_SECONDS = 8;
+let lastUserAt = 0;
+
 function chime(){
   try{
     const c = playCtx || new AudioContext();
     if(c.state === "suspended") c.resume();
-    for(let i = 0; i < 3; i++){
+    const t0 = c.currentTime + 0.05;
+    for(let n = 0; n < CHIME_SECONDS * 3; n++){
       const o = c.createOscillator(), g = c.createGain();
       o.type = "square"; o.frequency.value = 2000;
       o.connect(g); g.connect(c.destination);
-      const t = c.currentTime + i * 0.22;
+      const t = t0 + Math.floor(n / 3) + (n % 3) * 0.22;
       g.gain.setValueAtTime(0.0001, t);
       g.gain.exponentialRampToValueAtTime(0.34, t + 0.008);
       g.gain.setValueAtTime(0.34, t + 0.1);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
       o.start(t); o.stop(t + 0.16);
     }
-    if(c !== playCtx) setTimeout(() => { try{ c.close(); }catch(e){} }, 1600);
+    if(c !== playCtx) setTimeout(() => { try{ c.close(); }catch(e){} }, CHIME_SECONDS * 1000 + 600);
   }catch(e){}
 }
 
@@ -1014,6 +1022,11 @@ function systemPrompt(){
 Your name is Yuan AI. Whenever you say your name, in any language, say exactly "Yuan AI".
 Their hands are wet or greasy, so your voice is the only way they can reach you.
 You are here for company first and instructions second. Cooking alone is boring — you are the friend leaning on the counter.
+
+BE QUICK:
+Answer the instant they stop talking. No warm-up words ("okay, so", "great question"), no repeating
+back what they just said, no announcing what you are about to do. Lead with the useful part.
+When a tool is needed, call it straight away instead of talking first. Short and immediate beats complete.
 
 NOTHING IS ON THEIR SCREEN. They cannot read the recipe; you are holding it for them.
 So never say "as you can see" or "look at the step". Say it out loud, plainly, and only one step at a time.
@@ -1264,11 +1277,15 @@ async function start(){
         input:{
           format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE },
           keyterms: KEYTERMS,
-          // People pause to breathe mid-sentence. A second was still cutting them
-          // off, so give them a second and a half, and three seconds before the
-          // turn closes on its own. interrupt_response stays off: the microphone
-          // is shut while it talks (build 11 audio), so it cannot cut itself off.
-          turn_detection:{ vad_threshold:0.5, min_silence:1500, max_silence:3000, interrupt_response: false }
+          // Transcription stays on the default (balanced). Measured 9/17 on the live
+          // API with the real prompt: max_accuracy heard the same words but answered
+          // ~0.25 s later; balanced with the silences below answered ~0.1 s sooner
+          // than build 17. Quick hand-over: 1 s of silence after a finished sentence,
+          // 2.2 s at most when it sounds unfinished (the 9/11 values). vad 0.4 picks
+          // up a quieter voice across the kitchen. A stray half-sentence gets "Mm-hm?".
+          // interrupt_response stays off: the microphone is shut while it talks
+          // (build 11 audio), so it cannot cut itself off.
+          turn_detection:{ vad_threshold:0.4, min_silence:1000, max_silence:2200, interrupt_response: false }
         },
         output:{ voice:"anna", format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } },
         tools: TOOL_SCHEMA
@@ -1304,7 +1321,7 @@ async function start(){
         break;
 
       case "transcript.user.delta": showPartial(ev.text || ""); break;
-      case "transcript.user":       commitPartial(ev.text || ""); break;
+      case "transcript.user":       lastUserAt = Date.now(); commitPartial(ev.text || ""); break;
 
       // Undocumented but real: the agent's line streams in word by word.
       case "transcript.agent.delta": {
@@ -1477,7 +1494,7 @@ function sendMicChunk(arrayBuffer){
    screenshot of the corner is enough to tell what happened. */
 function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 17 · 09-17 · " + txt;
+  if(el) el.textContent = "build 18 · 09-17 · " + txt;
 }
 
 function toBase64(arrayBuffer){
