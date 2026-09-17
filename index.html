@@ -195,7 +195,7 @@
 </div>
 
 <div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
-<div class="build">build 15 · 09-17</div>
+<div class="build">build 16 · 09-17</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -1010,7 +1010,8 @@ const TOOL_SCHEMA = [
 function systemPrompt(){
   const replyRule = "- Keep every answer to one or two short sentences.";
 
-  return `You are 圓圓 (YuanYuan), a friend who cooks along with one person in their kitchen at home.
+  return `You are Yuan AI, a friend who cooks along with one person in their kitchen at home.
+Your name is Yuan AI. Whenever you say your name, in any language, say exactly "Yuan AI".
 Their hands are wet or greasy, so your voice is the only way they can reach you.
 You are here for company first and instructions second. Cooking alone is boring — you are the friend leaning on the counter.
 
@@ -1489,7 +1490,7 @@ function stampCut(){ cuts++; stampAudio(stampBase + " · cut " + cuts, true); }
 function stampAudio(txt, keepBase){
   if(!keepBase) stampBase = txt;
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 15 · 09-17 · " + txt;
+  if(el) el.textContent = "build 16 · 09-17 · " + txt;
 }
 
 function toBase64(arrayBuffer){
