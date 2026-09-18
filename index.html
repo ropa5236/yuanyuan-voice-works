@@ -195,7 +195,7 @@
 </div>
 
 <div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
-<div class="build">build 20 · 09-18</div>
+<div class="build">build 21 · 09-18</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -1348,8 +1348,8 @@ function render(){
       <div class="idle">Tell me what you feel like eating — or read out what's in the fridge.
         <span class="zhline">跟我說你想吃什麼，或直接報冰箱裡有什麼，我幫你挑。</span>
       </div>`;
-    menuEl.innerHTML = RECIPES.map(r =>
-      `<span class="${matched.includes(r.id) ? "hit" : ""}">${r.zh}<i>${r.en} &middot; ${r.minutes} min</i></span>`).join("");
+    // The book is not on the screen. They talk, it answers — nothing to read.
+    menuEl.innerHTML = "";
     return;
   }
   menuEl.innerHTML = "";
@@ -1556,8 +1556,12 @@ function stepPayload(){
     of: recipe.steps.length,
     instruction: s.text,
     instruction_zh: s.zh,
-    timer_running: !!s.wait,
+    timer_running: !!timerId,
     timer_seconds: s.wait || 0,
+    timer_started: false,
+    timer_note: s.wait
+      ? "Read the step out, then stop and let them ask. The clock is NOT running: call start_step_timer only when they say they have actually started."
+      : "No timer on this step. Read it out, then stop and let them ask.",
     waiting_suggestion: s.tip || "",
     waiting_suggestion_zh: s.tipZh || "",
     stage
@@ -1612,8 +1616,6 @@ const TOOLS = {
     recipe = r; stepIdx = 0; matched = []; pendingRecipe = null;
     clearTimer(); setStage("cooking"); saveState();
     say("RECIPE", r.en + " — " + r.steps.length + " steps", "act", r.zh + " — 共 " + r.steps.length + " 步");
-    const first = recipe.steps[0];
-    if(first.wait) startTimer(first.wait, first.label, first.labelZh);
     return { dish:r.en, dish_zh:r.zh, total_steps:r.steps.length,
              ingredients:r.ingredients.map(i => i.en), ...stepPayload() };
   },
@@ -1627,9 +1629,7 @@ const TOOLS = {
       say("RECIPE", recipe.en + " — finished", "act", recipe.zh + " — 完成");
       return { finished:true, dish:recipe.en, message:"That was the last step. Tell them it's ready, briefly." };
     }
-    const s = recipe.steps[stepIdx];
-    clearTimer();
-    if(s.wait) startTimer(s.wait, s.label, s.labelZh); else setStage("cooking");
+    clearTimer(); setStage("cooking");
     return stepPayload();
   },
 
@@ -1667,7 +1667,7 @@ const TOOLS = {
     clearTimer(); setStage("cooking"); saveState();
     say("RECIPE", recipe.en + " — " + clean.length + " steps · improvised",
         "act", recipe.zh + " — 共 " + clean.length + " 步 · 即席");
-    if(clean[0].wait) startTimer(clean[0].wait, clean[0].label, clean[0].labelZh);
+
     return { dish:recipe.en, dish_zh:recipe.zh, total_steps:clean.length, improvised:true,
              ingredients: recipe.ingredients.map(i => i.en), ...stepPayload() };
   },
@@ -1680,6 +1680,18 @@ const TOOLS = {
     if(!t) return { error:"Nothing to show. Pass the Traditional Chinese text." };
     subtitle(t);
     return { ok:true, now:"Say that same line in English, then stop and wait for them." };
+  },
+
+  /* The clock starts when they say they have started — not when the step is
+     read out. Somebody who has never made this asks two or three questions
+     first, and a timer running through that is a timer that lies. */
+  start_step_timer(){
+    if(!recipe) return { error:"Nothing is cooking yet." };
+    const s = recipe.steps[stepIdx];
+    if(!s) return { error:"No step is open." };
+    if(!s.wait) return { timer_running:false, message:"This step has no waiting in it. Ask them to tell you when it is done." };
+    startTimer(s.wait, s.label, s.labelZh);
+    return { timer_running:true, seconds:s.wait, stage };
   },
 
   set_timer({ seconds, label, label_zh }){
@@ -1737,6 +1749,9 @@ const TOOL_SCHEMA = [
     parameters:{ type:"object", properties:{
       zh:{ type:"string", description:"Traditional Chinese for the line you are about to say out loud" }
     }, required:["zh"] } },
+  { type:"function", name:"start_step_timer",
+    description:"Start the clock for the step they are on. Call this ONLY after they say they have actually started it — never in the same breath as reading the step out.",
+    parameters:{ type:"object", properties:{} } },
   { type:"function", name:"set_timer",
     description:"Start a timer they asked for by hand.",
     parameters:{ type:"object", properties:{
@@ -1853,6 +1868,16 @@ So each time it is your turn:
 Never call show_subtitle after you have spoken, and never twice in the same turn.
 When you are reading out a recipe step, pass the instruction_zh the tool gave you, word for word.
 
+HOW A STEP GOES — THEY MAY NEVER HAVE COOKED BEFORE:
+1. Read the step out. One step, nothing from the step after it.
+2. Stop. Let them ask. "How big?", "how hot?", "how do I know when it is ready?" — answer
+   it in one or two sentences and stay on the same step. Questions are not a delay; this is
+   the job. Never answer a question by moving on to the next step.
+3. Only when they say they have actually started it — "好了", "下鍋了", "in the pan",
+   "done" — call start_step_timer. Never start the clock in the same breath as reading the
+   step out: they are still finding the garlic.
+4. While it runs, the tool gave you something small they can do, and then you just talk to them.
+
 Rules:
 ${replyRule}
 - To move forward, call next_step — and only when they say they have finished the current step.
@@ -1899,6 +1924,25 @@ let running = false;
    the cook, and answers itself. Unless they are on headphones we simply
    stop sending microphone frames while its voice is playing. */
 let agentSpeaking = false, gateTimer = null, headphones = false;
+
+/* Taking the turn back. The gate above means that if they start talking while
+   it is still going, nothing they say arrives — they have to wait it out and
+   start again. So while it speaks we still measure the microphone, and a voice
+   clearly louder than the echo, held for a quarter of a second, is a person
+   cutting in: the rest of that reply is dropped, the gate opens, and it is
+   their turn. The playback context is never closed here — only muted for that
+   one reply — because re-creating it outside a tap is what silenced phones. */
+const BARGE_LEVEL = 0.22;      // echo with echoCancellation on sits far below this
+const BARGE_CHUNKS = 5;        // 5 x 50 ms of it — a word, not a clatter
+let bargeCount = 0, currentReply = null;
+
+function takeTurnBack(){
+  bargeCount = 0;
+  if(currentReply) mutedReply = currentReply;   // drop the rest of its audio
+  pendingPcm = []; pendingLen = 0;
+  openGate();
+  say("SYSTEM", "Go ahead — it stopped talking.", "act", "你說，圓圓停下來了。");
+}
 
 function agentAudioStart(){
   setTurn("agent");
@@ -2044,14 +2088,14 @@ async function start(){
         input:{
           format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE },
           keyterms: KEYTERMS,
-          // Let them finish. 2 s of silence after a sentence that sounds complete,
-          // 4 s when it sounds unfinished — cooking pauses are long, and taking the
-          // turn early is worse than answering late. vad 0.4 picks up a quieter voice
+          // Let them finish. 3 s of silence after a sentence that sounds complete,
+          // 5 s when it sounds unfinished. Mandarin pauses mid-sentence more than
+          // English does, and taking the turn early is worse than answering late. vad 0.4 picks up a quieter voice
           // across the kitchen. Transcription stays on the default (balanced):
           // measured 9/17 on the live API, max_accuracy heard the same words ~0.25 s later.
           // interrupt_response stays off: the microphone is shut while it talks
           // (build 11 audio), so it cannot cut itself off.
-          turn_detection:{ vad_threshold:0.4, min_silence:2000, max_silence:4000, interrupt_response: false }
+          turn_detection:{ vad_threshold:0.4, min_silence:3000, max_silence:5000, interrupt_response: true }
         },
         output:{ voice:"anna", format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } },
         tools: TOOL_SCHEMA
@@ -2111,8 +2155,11 @@ async function start(){
       case "transcript.agent":
         commitAgent(ev.reply_id && ev.reply_id === mutedReply ? "" : (ev.text || "")); break;
 
+      case "reply.started": currentReply = ev.reply_id; break;
+
       case "reply.audio":
-        if(ev.reply_id && ev.reply_id === mutedReply) break;   // garbled — see above
+        currentReply = ev.reply_id || currentReply;
+        if(ev.reply_id && ev.reply_id === mutedReply) break;   // garbled, or they cut in
         agentAudioStart();
         playChunk(ev.data);
         break;
@@ -2260,12 +2307,23 @@ async function openMic(){
 /* The one door microphone audio leaves by, whichever node produced it. */
 function sendMicChunk(arrayBuffer){
   if(!ws || ws.readyState !== WebSocket.OPEN) return;
-  if(agentSpeaking || waking){ setLevel(-1); return; }   // it is talking, or we are — do not mix streams
-
   const pcm = new Int16Array(arrayBuffer);
   let peak = 0;
   for(let i = 0; i < pcm.length; i += 6){ const a = Math.abs(pcm[i]); if(a > peak) peak = a; }
-  setLevel(peak / 32768);
+  const level = peak / 32768;
+
+  // It is talking, or we are — do not mix the two streams. But keep listening:
+  // a voice over the top of it means they want the turn back.
+  if(agentSpeaking || waking){
+    setLevel(-1);
+    if(agentSpeaking && !waking){
+      if(level > BARGE_LEVEL){ if(++bargeCount >= BARGE_CHUNKS) takeTurnBack(); }
+      else if(bargeCount) bargeCount--;
+    }
+    return;
+  }
+  bargeCount = 0;
+  setLevel(level);
 
   ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(arrayBuffer) }));
 }
@@ -2274,7 +2332,7 @@ function sendMicChunk(arrayBuffer){
    screenshot of the corner is enough to tell what happened. */
 function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 20 · 09-18 · " + txt;
+  if(el) el.textContent = "build 21 · 09-18 · " + txt;
 }
 
 function toBase64(arrayBuffer){
