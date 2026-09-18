@@ -199,7 +199,7 @@
 </div>
 
 <div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
-<div class="build">build 23 · 09-18</div>
+<div class="build">build 24 · 09-18</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -1907,9 +1907,13 @@ Your tone follows the stage that the tools hand back:
 LET THEM FINISH:
 They are cooking, so they stop mid-sentence to look in a pan or to think. Assume there is
 more coming. Before you say anything, ask yourself whether that could be the first half of
-a sentence: it names no dish and no ingredient, it asks nothing, it trails off on "and",
-"then", "I want to", "can we", or it is a single stray word. If so, you have not heard them
-yet. Say one short sound — "Mm-hm?" — or nothing at all, and wait. Never guess the rest,
+a sentence: it names no dish and no ingredient, it asks nothing, and it trails off on "and",
+"then", "I want to", "can we". If so, you have not heard them yet.
+But a short answer is not a fragment. When someone is asked what they want to cook, the
+whole answer is usually two or three words — "番茄炒蛋", "tomato egg", "curry", "the soup" —
+and that is a complete instruction: go straight to prep_list, exactly as if they had said
+"I want to make it". The same goes for "好了", "next", "again", "yes", a number, or a list
+of what is in the fridge. Never leave one of those hanging. Say one short sound — "Mm-hm?" — or nothing at all, and wait. Never guess the rest,
 never answer half a sentence, and never start a new subject of your own while they are
 mid-sentence.
 The only reason to cut in without waiting is danger: something burning, oil catching fire,
@@ -2114,9 +2118,25 @@ function resetTurnState(){ heardSpeech = false; quietMs = 0; turnOpen = false; }
 
 /* Hand the API the silence it needs, all at once. It measures audio, not the
    clock, so a block sent in one go counts as that many seconds of quiet. */
+let replyWatchdog = null, replyHeard = false;
+
+/* If a closed turn brings nothing audible back, say so instead of sitting
+   there. The microphone is already open; they just need to know to try again. */
+function watchForReply(){
+  clearTimeout(replyWatchdog);
+  replyHeard = false;
+  replyWatchdog = setTimeout(() => {
+    if(replyHeard || !running) return;
+    openGate();
+    say("SYSTEM", "No answer came back — say that again.", "warn",
+        "圓圓沒有回應，再說一次就好。");
+  }, 9000);
+}
+
 function closeTurn(){
   turnOpen = false; heardSpeech = false; quietMs = 0;
   if(!ws || ws.readyState !== WebSocket.OPEN) return;
+  watchForReply();
   const CH = Math.round(SAMPLE_RATE * 200 / 1000);
   const quiet = new Int16Array(CH);
   for(let i = 0; i < Math.ceil(CLOSE_SILENCE_MS / 200); i++)
@@ -2144,7 +2164,7 @@ function agentAudioEndsSoon(){
   gateTimer = setTimeout(() => { agentSpeaking = false; setTurn("you"); }, remainMs + 350);
 }
 function openGate(){ clearTimeout(gateTimer); agentSpeaking = false; setTurn("you"); }
-function clearTurnHold(){ resetTurnState(); bargeCount = 0; }
+function clearTurnHold(){ resetTurnState(); bargeCount = 0; clearTimeout(replyWatchdog); replyHeard = true; }
 
 /* ---- waking it up when a timer ends ------------------------------
    The whole product rests on this moment: the pot is boiling, their hands
@@ -2344,12 +2364,20 @@ async function start(){
 
       case "reply.started": currentReply = ev.reply_id; break;
 
-      case "reply.audio":
+      case "reply.audio": {
         currentReply = ev.reply_id || currentReply;
         if(ev.reply_id && ev.reply_id === mutedReply) break;   // garbled, or they cut in
+        const pcm = decodeAudio(ev.data);
+        // Replies that carry no sound at all: the API sends these while it works
+        // something out, one or two seconds each, several in a row. Treating them
+        // as speech shut the microphone for whole seconds with nothing to hear —
+        // which is exactly what "it froze" looked like. Ignore them completely.
+        if(!hasSound(pcm, ev.reply_id)) break;
+        replyHeard = true;
         agentAudioStart();
-        playChunk(ev.data);
+        playPcm(pcm);
         break;
+      }
 
       case "reply.done":
         flushPlayback();          // the tail packets, before anything reads playHead
@@ -2359,6 +2387,7 @@ async function start(){
         break;
 
       case "tool.call": {
+        replyHeard = true;
         const fn = TOOLS[ev.name];
         let result;
         if(!fn) result = { error:`Unknown tool ${ev.name}` };
@@ -2528,7 +2557,7 @@ function sendMicChunk(arrayBuffer){
    screenshot of the corner is enough to tell what happened. */
 function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 23 · 09-18 · " + txt;
+  if(el) el.textContent = "build 24 · 09-18 · " + txt;
 }
 
 function toBase64(arrayBuffer){
@@ -2553,15 +2582,34 @@ function toBase64(arrayBuffer){
 const PREBUFFER = 0.18;   // seconds of lead before the first chunk plays
 const BATCH_MS   = 80;    // gather the 10 ms packets into one block before scheduling
 
-function playChunk(b64){
-  if(!b64) return;
+function decodeAudio(b64){
+  if(!b64) return null;
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
   for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
-  pendingPcm.push(new Int16Array(bytes.buffer));
-  pendingLen += bytes.length >> 1;
+  return new Int16Array(bytes.buffer);
+}
+
+/* Is there anything in this packet? Once a reply has been heard to make a
+   sound, every packet of it plays — the pauses inside a sentence belong to it. */
+const SOUND_FLOOR = 250;      // out of 32768
+let soundReply = null, soundSeen = false;
+function hasSound(pcm, replyId){
+  if(!pcm || !pcm.length) return false;
+  if(replyId !== soundReply){ soundReply = replyId; soundSeen = false; }
+  if(soundSeen) return true;
+  for(let i = 0; i < pcm.length; i += 4){ if(Math.abs(pcm[i]) > SOUND_FLOOR){ soundSeen = true; return true; } }
+  return false;
+}
+
+function playPcm(pcm){
+  if(!pcm || !pcm.length) return;
+  pendingPcm.push(pcm);
+  pendingLen += pcm.length;
   if(pendingLen >= SAMPLE_RATE * BATCH_MS / 1000) flushPlayback();
 }
+
+function playChunk(b64){ playPcm(decodeAudio(b64)); }
 
 /* Hand whatever has arrived to the speakers as one continuous block.
    Called on every ~80 ms of audio, and once more when the reply ends so the
