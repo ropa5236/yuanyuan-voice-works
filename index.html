@@ -199,7 +199,7 @@
 </div>
 
 <div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
-<div class="build">build 22 · 09-18</div>
+<div class="build">build 23 · 09-18</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -2092,8 +2092,40 @@ const BARGE_LEVEL = 0.17;      // echo with echoCancellation on sits far below t
 const BARGE_CHUNKS = 4;        // 4 x 50 ms of it — a word, not a clatter
 let bargeCount = 0, currentReply = null;
 
+/* WHO DECIDES THE SENTENCE IS OVER.
+   The API ends their turn after a stretch of silence and answers whatever it
+   has — which is how half a sentence gets answered while they are still
+   talking. No setting fixes that, because a pause for breath and the end of a
+   sentence are the same silence to it. So we stop sending it the pauses.
+   While they are mid-sentence and quiet, nothing leaves this page: the stream
+   the API hears has no gap in it, so it cannot end the turn. When they have
+   actually stopped — TURN_END_MS of quiet here — we send a block of silence
+   long enough to trip its own timer at once, and it answers immediately.
+   min_silence on the session is set far higher than any real pause, so this
+   page is the only thing that ever ends a turn. */
+const SPEAK_LEVEL  = 0.055;   // above this, a voice
+const QUIET_LEVEL  = 0.035;   // below this, a room
+const PAUSE_MS     = 300;     // quiet this long: hold the floor, send nothing
+const TURN_END_MS  = 1500;    // quiet this long: they are done
+const CLOSE_SILENCE_MS = 6500;// what we then hand the API so it answers now
+let heardSpeech = false, quietMs = 0, turnOpen = false;
+
+function resetTurnState(){ heardSpeech = false; quietMs = 0; turnOpen = false; }
+
+/* Hand the API the silence it needs, all at once. It measures audio, not the
+   clock, so a block sent in one go counts as that many seconds of quiet. */
+function closeTurn(){
+  turnOpen = false; heardSpeech = false; quietMs = 0;
+  if(!ws || ws.readyState !== WebSocket.OPEN) return;
+  const CH = Math.round(SAMPLE_RATE * 200 / 1000);
+  const quiet = new Int16Array(CH);
+  for(let i = 0; i < Math.ceil(CLOSE_SILENCE_MS / 200); i++)
+    ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(quiet.buffer) }));
+}
+
 function takeTurnBack(){
   bargeCount = 0;
+  heardSpeech = true; quietMs = 0; turnOpen = true;   // they are mid-sentence
   if(currentReply) mutedReply = currentReply;   // drop the rest of its audio
   pendingPcm = []; pendingLen = 0;
   openGate();
@@ -2112,6 +2144,7 @@ function agentAudioEndsSoon(){
   gateTimer = setTimeout(() => { agentSpeaking = false; setTurn("you"); }, remainMs + 350);
 }
 function openGate(){ clearTimeout(gateTimer); agentSpeaking = false; setTurn("you"); }
+function clearTurnHold(){ resetTurnState(); bargeCount = 0; }
 
 /* ---- waking it up when a timer ends ------------------------------
    The whole product rests on this moment: the pot is boiling, their hands
@@ -2189,10 +2222,8 @@ function nudge(){
     const slice = wakePcm.slice(i, i + CH);
     ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(slice.buffer) }));
   }
-  // Then silence, so its turn detector knows the line has ended.
-  const quiet = new Int16Array(CH);
-  for(let k = 0; k < Math.ceil(1400 / CHUNK_MS); k++)
-    ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(quiet.buffer) }));
+  // Then enough silence for its turn detector to call that the end of a turn.
+  closeTurn();
 
   setTimeout(() => { waking = false; }, 1200);
 }
@@ -2244,15 +2275,14 @@ async function start(){
         input:{
           format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE },
           keyterms: KEYTERMS,
-          // Let them finish. 3.5 s of silence even when the sentence sounds complete,
-          // 5 s when it does not. The API will not take min_silence == max_silence, so
-          // this is as close to "always wait" as it allows. Mandarin pauses mid-sentence
-          // far more than English, and taking the turn early is worse than answering late. vad 0.4 picks up a quieter voice
+          // Deliberately longer than any real pause: the page above decides when a
+          // turn is over and hands the API a block of silence to say so. These
+          // numbers exist only as a backstop if that ever fails to fire. vad 0.4 picks up a quieter voice
           // across the kitchen. Transcription stays on the default (balanced):
           // measured 9/17 on the live API, max_accuracy heard the same words ~0.25 s later.
           // interrupt_response stays off: the microphone is shut while it talks
           // (build 11 audio), so it cannot cut itself off.
-          turn_detection:{ vad_threshold:0.4, min_silence:3500, max_silence:5000, interrupt_response: true }
+          turn_detection:{ vad_threshold:0.4, min_silence:6000, max_silence:8000, interrupt_response: true }
         },
         output:{ voice:"anna", format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } },
         tools: TOOL_SCHEMA
@@ -2482,6 +2512,15 @@ function sendMicChunk(arrayBuffer){
   bargeCount = 0;
   setLevel(level);
 
+  // Their turn, and the page is holding the floor for them.
+  if(level > SPEAK_LEVEL){ heardSpeech = true; turnOpen = true; quietMs = 0; }
+  else if(level < QUIET_LEVEL) quietMs += CHUNK_MS;
+  else quietMs = 0;
+
+  if(!heardSpeech) return;                 // nothing said yet — nothing to send
+  if(quietMs >= TURN_END_MS){ if(turnOpen) closeTurn(); return; }
+  if(quietMs >= PAUSE_MS) return;          // a breath, not the end — hold it
+
   ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(arrayBuffer) }));
 }
 
@@ -2489,7 +2528,7 @@ function sendMicChunk(arrayBuffer){
    screenshot of the corner is enough to tell what happened. */
 function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 22 · 09-18 · " + txt;
+  if(el) el.textContent = "build 23 · 09-18 · " + txt;
 }
 
 function toBase64(arrayBuffer){
@@ -2582,6 +2621,7 @@ function stop(){
   setLevel(-1);
   partialLine = agentLine = null;
   agentBuf = ""; pendingZh = null;
+  clearTurnHold();
 
   micBtn.disabled = false;
   micBtn.classList.remove("on");
