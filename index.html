@@ -64,7 +64,7 @@
   .dot.connecting{background:var(--accent);animation:pulse 1s infinite}
   @keyframes pulse{50%{opacity:.35}}
   .pill b{color:var(--text);font-weight:600}
-  .pill.picking b{color:var(--accent)}
+  .pill.picking b,.pill.prep b{color:var(--accent)}
   .pill.cooking b{color:var(--warm)}
   .pill.waiting b,.pill.done b{color:var(--sage)}
 
@@ -195,7 +195,7 @@
 </div>
 
 <div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
-<div class="build">build 19 · 09-17</div>
+<div class="build">build 20 · 09-18</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -573,15 +573,727 @@ const RECIPES = [
       { text:"Lid off, straight onto a plate. Greens wait for nobody.",
         zh:"開蓋馬上盛盤。青菜不等人的。" }
     ]
+  },
+  {
+    id:"scallion_egg", zh:"蔥蛋", en:"Scallion Omelette", minutes:8,
+    blurb:"Three eggs, one bunch of scallion, and nothing to go wrong.",
+    blurbZh:"三顆蛋、一把蔥，沒什麼會出錯。",
+    keys:["蔥蛋","蔥","青蔥","蛋","雞蛋","scallion","spring onion","omelette","egg"],
+    ingredients:[
+      { zh:"雞蛋 3 顆", en:"3 eggs" },
+      { zh:"青蔥 2 支（切蔥花）", en:"2 scallions, chopped" },
+      { zh:"鹽 適量", en:"Salt" },
+      { zh:"油 2 大匙", en:"2 tbsp oil" }
+    ],
+    steps:[
+      { text:"Chop the scallion — white parts and green parts both, about a finger-width each.",
+        zh:"蔥切成蔥花，蔥白蔥綠都要，大概一指節長。" },
+      { text:"Beat three eggs with a pinch of salt, tip the scallion in, and stir it through.",
+        zh:"三顆蛋加一撮鹽打散，蔥花倒進去拌一拌。" },
+      { text:"Heat the pan until a drop of water dances, then two tablespoons of oil. Hot pan, plenty of oil — that is the whole trick.",
+        zh:"鍋子燒到滴水會跳，再下兩大匙油。熱鍋多油，訣竅就這個。",
+        wait:60, label:"Pan heating up", labelZh:"等鍋熱",
+        tip:"Get a plate out while it heats.",
+        tipZh:"趁現在把盤子拿出來。" },
+      { text:"Pour the egg in all at once. Let it sit — do not stir it.",
+        zh:"蛋一次全部倒下去，讓它定住，不要攪。",
+        wait:60, label:"Bottom setting", labelZh:"等底部凝固",
+        tip:"It should be puffing up at the edges by now.",
+        tipZh:"現在邊邊應該有點膨起來了。" },
+      { text:"Edges are set — flip it in two or three pieces, it does not have to be pretty.",
+        zh:"邊邊定型了就翻面，分兩三塊翻也沒關係，不用漂亮。",
+        wait:45, label:"Other side cooking", labelZh:"等另一面熟",
+        tip:"Almost there.",
+        tipZh:"快好了。" },
+      { text:"Out onto the plate. Eat it while the edges are still crisp.",
+        zh:"起鍋裝盤，趁邊邊還脆的時候吃。" }
+    ]
+  },
+  {
+    id:"cabbage", zh:"蒜炒高麗菜", en:"Stir-fried Cabbage", minutes:10,
+    blurb:"Half a cabbage, four cloves of garlic, and a pan hot enough.",
+    blurbZh:"半顆高麗菜、四瓣蒜，還有一個夠熱的鍋。",
+    keys:["高麗菜","甘藍","炒高麗菜","蒜","蒜頭","cabbage","stir-fried cabbage","garlic"],
+    ingredients:[
+      { zh:"高麗菜 半顆（用手剝）", en:"Half a cabbage, torn by hand" },
+      { zh:"蒜頭 4 瓣（拍扁）", en:"4 cloves garlic, smashed" },
+      { zh:"鹽 適量", en:"Salt" },
+      { zh:"水 2 大匙", en:"2 tbsp water" }
+    ],
+    steps:[
+      { text:"Tear the cabbage by hand into pieces about the size of your palm. Torn edges soak up more sauce than cut ones.",
+        zh:"高麗菜用手剝成手掌大小。手剝的斷面比刀切的更吸汁。" },
+      { text:"Rinse it and shake it as dry as you can. Wet cabbage steams instead of frying.",
+        zh:"沖洗後盡量甩乾。濕的高麗菜下鍋只會變成用蒸的。",
+        wait:120, label:"Draining", labelZh:"等瀝乾",
+        tip:"Smash the garlic while it drains.",
+        tipZh:"趁瀝乾的時候把蒜拍一拍。" },
+      { text:"Pan on high until it smokes faintly, then oil, then the garlic. Hot pan, cold oil — that order.",
+        zh:"鍋子開大火燒到微微冒煙，再下油，再下蒜。熱鍋冷油，順序不能反。",
+        wait:30, label:"Garlic sizzling", labelZh:"等蒜爆香",
+        tip:"Stems first when you add the cabbage, leaves after.",
+        tipZh:"等下先下菜梗，葉子後下。" },
+      { text:"Stems in first, toss hard for half a minute, then the leaves.",
+        zh:"先下菜梗，大火翻炒半分鐘，再下葉子。",
+        wait:60, label:"Stir-frying", labelZh:"大火快炒",
+        tip:"Keep it moving, do not let it sit.",
+        tipZh:"一直翻，不要讓它停著。" },
+      { text:"Salt, two tablespoons of water, lid on for a moment — that finishes the stems.",
+        zh:"撒鹽，加兩大匙水，蓋一下鍋，菜梗就會熟透。",
+        wait:45, label:"Steaming the stems", labelZh:"等菜梗熟透",
+        tip:"Leaves should still look bright green.",
+        tipZh:"葉子應該還是翠綠的。" },
+      { text:"Lid off, one last toss, straight onto the plate. Cabbage waits for nobody.",
+        zh:"開蓋翻一下就起鍋。高麗菜不等人。" }
+    ]
+  },
+  {
+    id:"water_spinach", zh:"蒜炒空心菜", en:"Garlic Water Spinach", minutes:8,
+    blurb:"Ninety seconds in the pan, and the stems still snap.",
+    blurbZh:"下鍋九十秒，梗還是脆的。",
+    keys:["空心菜","蕹菜","炒空心菜","蒜","water spinach","morning glory","kong xin cai"],
+    ingredients:[
+      { zh:"空心菜 一把", en:"A bunch of water spinach" },
+      { zh:"蒜頭 4 瓣（切片）", en:"4 cloves garlic, sliced" },
+      { zh:"辣椒 1 根（可省）", en:"1 chilli, optional" },
+      { zh:"鹽 適量", en:"Salt" }
+    ],
+    steps:[
+      { text:"Cut the stems and leaves apart — stems into finger lengths. They cook at different speeds.",
+        zh:"梗跟葉分開切，梗切成一指長。兩個熟的速度不一樣。" },
+      { text:"Wash and shake dry. This one especially — it holds a lot of water.",
+        zh:"洗好甩乾。這道特別重要，空心菜很會藏水。",
+        wait:90, label:"Draining", labelZh:"等瀝乾",
+        tip:"Slice the garlic now.",
+        tipZh:"趁現在把蒜切片。" },
+      { text:"Very hot pan, oil, garlic and chilli. Count to ten and no longer.",
+        zh:"鍋子燒很熱，下油，下蒜片和辣椒。數到十就好，不要更久。",
+        wait:20, label:"Garlic sizzling", labelZh:"等蒜香出來",
+        tip:"Have the stems ready in your hand.",
+        tipZh:"菜梗先拿在手上。" },
+      { text:"Stems in, high heat, keep them moving.",
+        zh:"菜梗下鍋，大火，不停翻。",
+        wait:45, label:"Stems frying", labelZh:"炒菜梗",
+        tip:"Leaves next.",
+        tipZh:"等下換葉子。" },
+      { text:"Leaves in, salt, and toss until they just wilt. Ninety seconds total, no more.",
+        zh:"葉子下鍋，撒鹽，翻到剛軟掉就好。全程九十秒，不要更久。",
+        wait:45, label:"Leaves wilting", labelZh:"等葉子變軟",
+        tip:"Straight out as soon as they go glossy.",
+        tipZh:"看起來油亮就馬上起鍋。" },
+      { text:"Onto the plate right away — leaving it in a hot pan turns it black.",
+        zh:"馬上盛盤，留在熱鍋裡會變黑。" }
+    ]
+  },
+  {
+    id:"tomato_soup", zh:"番茄蛋花湯", en:"Tomato Egg Drop Soup", minutes:15,
+    blurb:"Two tomatoes and two eggs, and the whole table smells like dinner.",
+    blurbZh:"兩顆番茄兩顆蛋，整桌就有晚餐的味道。",
+    keys:["番茄蛋花湯","蛋花湯","番茄湯","湯","番茄","蛋","tomato soup","egg drop soup","soup"],
+    ingredients:[
+      { zh:"番茄 2 顆（切塊）", en:"2 tomatoes, in chunks" },
+      { zh:"雞蛋 2 顆（打散）", en:"2 eggs, beaten" },
+      { zh:"蔥花 適量", en:"Chopped scallion" },
+      { zh:"鹽 適量", en:"Salt" },
+      { zh:"香油 幾滴", en:"A few drops of sesame oil" }
+    ],
+    steps:[
+      { text:"Cut the tomatoes into chunks. A shallow cross on the skin makes them break down faster.",
+        zh:"番茄切塊。皮上劃個小十字，等下比較快化開。" },
+      { text:"A spoon of oil, tomatoes in, press them with the spatula until they go soft and red.",
+        zh:"下一匙油，番茄下鍋，用鍋鏟壓到軟、壓到出紅色的汁。",
+        wait:180, label:"Tomatoes breaking down", labelZh:"等番茄出汁",
+        tip:"Beat the eggs while those soften.",
+        tipZh:"趁這時候把蛋打散。" },
+      { text:"Pour in 700ml of water and bring it up to a boil.",
+        zh:"倒 700 毫升水，煮到滾。",
+        wait:300, label:"Coming to a boil", labelZh:"等水滾",
+        tip:"Chop the scallion now.",
+        tipZh:"趁現在切蔥花。" },
+      { text:"Salt first, taste it, then turn the heat down so it is barely bubbling.",
+        zh:"先加鹽試味道，然後轉小火，讓它只是微微冒泡。" },
+      { text:"Now the egg: pour it in a thin stream while stirring one direction. Thin stream, keep stirring — that is what makes the threads.",
+        zh:"現在下蛋：一邊攪一邊細細地倒進去。細細地倒、一直攪，蛋花才會漂亮。",
+        wait:30, label:"Egg setting", labelZh:"等蛋花成形",
+        tip:"Do not stir hard or it goes cloudy.",
+        tipZh:"不要用力攪，會變濁。" },
+      { text:"Heat off, scallion and a few drops of sesame oil on top.",
+        zh:"關火，撒蔥花，滴幾滴香油。" }
+    ]
+  },
+  {
+    id:"luffa_clam", zh:"蛤蜊絲瓜", en:"Luffa with Clams", minutes:15,
+    blurb:"The clams make the soup. You barely do anything.",
+    blurbZh:"湯是蛤蜊自己做的，你幾乎不用動手。",
+    keys:["絲瓜","蛤蜊","蛤蜊絲瓜","絲瓜蛤蜊","luffa","loofah","clam","clams"],
+    ingredients:[
+      { zh:"絲瓜 1 條（去皮切塊）", en:"1 luffa, peeled and cut" },
+      { zh:"蛤蜊 300 克（吐過沙）", en:"300g clams, purged" },
+      { zh:"薑 3 片", en:"3 slices ginger" },
+      { zh:"米酒 1 大匙", en:"1 tbsp rice wine" },
+      { zh:"鹽 少許", en:"A little salt" }
+    ],
+    steps:[
+      { text:"Peel the luffa, leaving a thin green layer, and cut it into bite pieces.",
+        zh:"絲瓜削皮，留一點點綠，切成一口大小。" },
+      { text:"Oil and the ginger in a warm pan, just until you can smell it.",
+        zh:"鍋子溫熱下油、下薑片，聞到香味就好。",
+        wait:30, label:"Ginger warming", labelZh:"等薑出味",
+        tip:"Have the luffa ready.",
+        tipZh:"絲瓜先準備好。" },
+      { text:"Luffa in, stir it about, then lid on and let it sweat — it makes its own water.",
+        zh:"絲瓜下鍋翻一下，蓋上鍋蓋讓它出水，它自己會出很多水。",
+        wait:180, label:"Luffa softening", labelZh:"等絲瓜軟",
+        tip:"Rinse the clams once more while it softens.",
+        tipZh:"趁這時候把蛤蜊再沖一次。" },
+      { text:"Clams in, rice wine round the edge of the pan, lid back on.",
+        zh:"蛤蜊下鍋，米酒沿鍋邊淋一圈，蓋回鍋蓋。",
+        wait:240, label:"Clams opening", labelZh:"等蛤蜊開口",
+        tip:"Take them out as they open, if you can be bothered — they toughen.",
+        tipZh:"開了就可以先夾出來，久煮會變硬。" },
+      { text:"All open? Taste the soup first — the clams are already salty. Salt only if it needs it.",
+        zh:"都開了嗎？先嘗湯，蛤蜊本身就有鹹度，不夠再加鹽。" }
+    ]
+  },
+  {
+    id:"basil_eggplant", zh:"塔香茄子", en:"Basil Eggplant", minutes:18,
+    blurb:"The trick is oil and speed — that is how it stays purple.",
+    blurbZh:"訣竅是油多、動作快，這樣才會紫。",
+    keys:["茄子","塔香茄子","九層塔","basil","eggplant","aubergine"],
+    ingredients:[
+      { zh:"茄子 2 條（滾刀切）", en:"2 eggplants, roll-cut" },
+      { zh:"九層塔 一把", en:"A handful of Thai basil" },
+      { zh:"蒜末 3 瓣", en:"3 cloves garlic, chopped" },
+      { zh:"醬油 1 大匙", en:"1 tbsp soy sauce" },
+      { zh:"糖 半小匙", en:"½ tsp sugar" }
+    ],
+    steps:[
+      { text:"Roll-cut the eggplant and drop the pieces straight into salted water so they do not go brown.",
+        zh:"茄子滾刀切，切好馬上泡鹽水，才不會變黑。",
+        wait:120, label:"Soaking", labelZh:"等泡鹽水",
+        tip:"Chop the garlic and pick the basil leaves now.",
+        tipZh:"趁現在切蒜、把九層塔葉摘下來。" },
+      { text:"Drain them and pat them dry. Wet eggplant spits in hot oil.",
+        zh:"撈起來擦乾。濕的茄子下油鍋會噴。" },
+      { text:"Generous oil, medium-high heat, eggplant in skin side down. Do not crowd it and do not keep poking it.",
+        zh:"油下多一點，中大火，茄子皮朝下放。不要擠、不要一直翻。",
+        wait:180, label:"Frying until soft", labelZh:"等茄子變軟",
+        tip:"It should be going glossy and giving way.",
+        tipZh:"應該會變得油亮、按下去軟軟的。" },
+      { text:"Push it to one side, garlic into the gap, ten seconds.",
+        zh:"茄子撥到一邊，蒜末下空位，炒十秒。" },
+      { text:"Soy sauce and sugar, two tablespoons of water, toss it all together.",
+        zh:"醬油、糖、兩大匙水下去，全部拌勻。",
+        wait:60, label:"Sauce thickening", labelZh:"等醬汁收一點",
+        tip:"Basil goes in at the very end.",
+        tipZh:"九層塔最後才下。" },
+      { text:"Heat off, then the basil. The heat left in the pan is enough — that is how it keeps its smell.",
+        zh:"先關火再下九層塔，餘溫就夠了，香味才不會跑掉。" }
+    ]
+  },
+  {
+    id:"tofu_pork", zh:"豆干炒肉絲", en:"Dried Tofu with Pork", minutes:15,
+    blurb:"Cheap, fast, and it keeps for tomorrow's lunchbox.",
+    blurbZh:"便宜又快，還能留到明天的便當。",
+    keys:["豆干","豆乾","肉絲","豆干炒肉絲","dried tofu","tofu","pork","shredded pork"],
+    ingredients:[
+      { zh:"豆干 5 塊（切片）", en:"5 pieces dried tofu, sliced" },
+      { zh:"豬肉絲 150 克", en:"150g shredded pork" },
+      { zh:"蒜末 2 瓣", en:"2 cloves garlic, chopped" },
+      { zh:"醬油 1 大匙", en:"1 tbsp soy sauce" },
+      { zh:"蔥段 適量", en:"Scallion, in sections" }
+    ],
+    steps:[
+      { text:"Slice the dried tofu thin, and marinate the pork with half a spoon of soy sauce.",
+        zh:"豆干切薄片，豬肉絲用半匙醬油抓一下。",
+        wait:120, label:"Pork marinating", labelZh:"等肉入味",
+        tip:"Slice the tofu while the pork sits.",
+        tipZh:"趁這時候把豆干切好。" },
+      { text:"Hot pan, oil, pork in. Spread it out and leave it until the underside browns.",
+        zh:"熱鍋下油，肉絲下鍋。攤平不要動，等底下上色。",
+        wait:90, label:"Pork browning", labelZh:"等肉變色",
+        tip:"Do not stir it yet.",
+        tipZh:"先不要翻。" },
+      { text:"Now stir it loose, then push it to one side and put the tofu in.",
+        zh:"現在炒散，撥到一邊，豆干下鍋。",
+        wait:120, label:"Tofu browning", labelZh:"等豆干上色",
+        tip:"It should smell toasty.",
+        tipZh:"應該會有一點焦香。" },
+      { text:"Garlic and soy sauce round the edge of the pan, then toss everything together.",
+        zh:"蒜末和醬油沿著鍋邊下，然後全部拌炒均勻。",
+        wait:60, label:"Sauce coating", labelZh:"等醬汁裹上",
+        tip:"Add a spoon of water if it looks dry.",
+        tipZh:"看起來乾的話加一匙水。" },
+      { text:"Scallion in, one toss, done.",
+        zh:"蔥段下去翻一下就完成。" }
+    ]
+  },
+  {
+    id:"onion_egg", zh:"洋蔥炒蛋", en:"Onion Egg Stir-fry", minutes:12,
+    blurb:"One onion, cooked long enough to go sweet.",
+    blurbZh:"一顆洋蔥，炒到夠久就會變甜。",
+    keys:["洋蔥","洋蔥炒蛋","蛋","onion","onion egg","egg"],
+    ingredients:[
+      { zh:"洋蔥 1 顆（切絲）", en:"1 onion, sliced" },
+      { zh:"雞蛋 3 顆", en:"3 eggs" },
+      { zh:"鹽 適量", en:"Salt" },
+      { zh:"醬油 半大匙", en:"½ tbsp soy sauce" }
+    ],
+    steps:[
+      { text:"Slice the onion with the grain — it holds together better that way.",
+        zh:"洋蔥順著紋路切絲，比較不會散掉。" },
+      { text:"Beat the eggs with a pinch of salt. Hot pan, plenty of oil, eggs in, out again the moment they set.",
+        zh:"蛋加一撮鹽打散。熱鍋多油，蛋下鍋，一凝固就馬上盛起來。" },
+      { text:"Same pan, onion in, medium heat. This is the part people rush — leave it alone.",
+        zh:"同一個鍋，洋蔥下去，中火。這一段大家都太急，放著就好。",
+        wait:300, label:"Onion going sweet", labelZh:"等洋蔥變甜",
+        tip:"It goes from white to see-through to golden. Wait for golden.",
+        tipZh:"它會從白色變透明再變金黃，等到金黃。" },
+      { text:"Half a spoon of soy sauce round the edge of the pan.",
+        zh:"半大匙醬油沿鍋邊淋下去。" },
+      { text:"Egg back in, fold it through twice, and off the heat.",
+        zh:"蛋倒回去，翻拌兩下，關火。" }
+    ]
+  },
+  {
+    id:"steamed_egg", zh:"蒸蛋", en:"Steamed Egg Custard", minutes:20,
+    blurb:"Smooth as pudding, if you strain it and keep the heat low.",
+    blurbZh:"過篩、小火，就會像布丁一樣滑。",
+    keys:["蒸蛋","水蒸蛋","蛋","steamed egg","egg custard","chawanmushi"],
+    ingredients:[
+      { zh:"雞蛋 3 顆", en:"3 eggs" },
+      { zh:"溫水 或 高湯 450 毫升", en:"450ml warm water or stock" },
+      { zh:"鹽 半小匙", en:"½ tsp salt" },
+      { zh:"蔥花 適量", en:"Chopped scallion" }
+    ],
+    steps:[
+      { text:"Beat the eggs, then measure: one part egg to one and a half parts warm water. Warm, not hot.",
+        zh:"蛋打散，然後量比例：蛋一份、溫水一份半。是溫水，不是熱水。" },
+      { text:"Salt in, stir, then pour it through a strainer into the bowl. Straining is what makes it smooth.",
+        zh:"加鹽拌勻，然後過篩倒進碗裡。過篩就是滑嫩的關鍵。" },
+      { text:"Skim off any foam, cover the bowl with foil or a plate.",
+        zh:"把表面的泡沫撈掉，碗上蓋鋁箔紙或盤子。" },
+      { text:"Into the steamer once the water is boiling, then turn it down to low. Hard boiling gives you holes.",
+        zh:"水滾了再放進蒸鍋，然後轉小火。大火會蒸出蜂窩。",
+        wait:720, label:"Steaming", labelZh:"蒸蛋中",
+        tip:"Twelve minutes with your hands free. Do not lift the lid.",
+        tipZh:"十二分鐘的空檔，不要一直掀蓋。" },
+      { text:"Poke the middle with a chopstick — clear liquid means done, cloudy means three more minutes.",
+        zh:"用筷子戳中間，流出來是清的就好了，是濁的就再蒸三分鐘。" },
+      { text:"Scallion on top, a few drops of soy sauce if you like.",
+        zh:"撒上蔥花，喜歡的話滴幾滴醬油。" }
+    ]
+  },
+  {
+    id:"cucumber", zh:"涼拌小黃瓜", en:"Smashed Cucumber Salad", minutes:12,
+    blurb:"Smash it, salt it, wait. The waiting is the recipe.",
+    blurbZh:"拍一拍、抓鹽、等。等待就是這道菜的全部。",
+    keys:["小黃瓜","涼拌小黃瓜","黃瓜","涼拌","cucumber","smashed cucumber","salad","cold dish"],
+    ingredients:[
+      { zh:"小黃瓜 3 條", en:"3 cucumbers" },
+      { zh:"蒜末 3 瓣", en:"3 cloves garlic, chopped" },
+      { zh:"鹽 1 小匙", en:"1 tsp salt" },
+      { zh:"糖 1 小匙", en:"1 tsp sugar" },
+      { zh:"烏醋 1 大匙", en:"1 tbsp black vinegar" },
+      { zh:"香油 1 小匙", en:"1 tsp sesame oil" }
+    ],
+    steps:[
+      { text:"Lay the cucumbers flat and smash them with the side of the knife, then break them into pieces. Smashed beats sliced — the cracks hold the dressing.",
+        zh:"小黃瓜平放，用刀面拍扁，再剝成塊。拍的比切的好，裂縫才吃得進味道。" },
+      { text:"Salt them in a bowl and toss. Now leave them.",
+        zh:"放進碗裡抓鹽拌勻，然後放著別動。",
+        wait:600, label:"Drawing out the water", labelZh:"等出水",
+        tip:"Ten minutes. Chop the garlic, and wash up what you have used so far.",
+        tipZh:"十分鐘。趁現在切蒜，順便把用過的東西洗一洗。" },
+      { text:"Pour off the water that came out and squeeze them gently. That water is the sogginess.",
+        zh:"把出的水倒掉，輕輕擠一下。那些水就是會讓它爛掉的原因。" },
+      { text:"Garlic, sugar, black vinegar, sesame oil. Toss it and taste.",
+        zh:"蒜末、糖、烏醋、香油下去拌一拌，嘗一下味道。" },
+      { text:"Better after twenty minutes in the fridge, but it is good right now too.",
+        zh:"冰二十分鐘更好吃，不過現在吃也很可以。" }
+    ]
+  },
+  {
+    id:"curry", zh:"咖哩雞", en:"Chicken Curry", minutes:35,
+    blurb:"One pot, and it tastes better tomorrow.",
+    blurbZh:"一鍋到底，而且明天更好吃。",
+    keys:["咖哩","咖哩雞","咖哩飯","curry","chicken curry"],
+    ingredients:[
+      { zh:"去骨雞腿 2 片（切塊）", en:"2 boneless chicken thighs, cut up" },
+      { zh:"洋蔥 1 顆（切塊）", en:"1 onion, chunked" },
+      { zh:"馬鈴薯 2 顆（切塊）", en:"2 potatoes, chunked" },
+      { zh:"紅蘿蔔 1 根（切塊）", en:"1 carrot, chunked" },
+      { zh:"咖哩塊 半盒", en:"Half a box of curry roux" },
+      { zh:"水 600 毫升", en:"600ml water" }
+    ],
+    steps:[
+      { text:"Chunk the onion, potato and carrot about the same size so they finish together.",
+        zh:"洋蔥、馬鈴薯、紅蘿蔔切差不多大小，才會同時熟。" },
+      { text:"Oil in the pot, chicken skin side down, brown it without moving it.",
+        zh:"鍋裡下油，雞肉皮朝下，不要翻動，煎到上色。",
+        wait:240, label:"Chicken browning", labelZh:"等雞肉上色",
+        tip:"Cut the vegetables while it browns if you have not yet.",
+        tipZh:"還沒切菜的話趁現在切。" },
+      { text:"Onion in, stir until it turns see-through, then the carrot and potato.",
+        zh:"洋蔥下鍋炒到透明，再下紅蘿蔔和馬鈴薯。",
+        wait:180, label:"Onion softening", labelZh:"等洋蔥變透明",
+        tip:"Have the water ready.",
+        tipZh:"水先準備好。" },
+      { text:"Water in, bring it to a boil, skim the foam, then lid on and low heat.",
+        zh:"加水煮滾，把浮沫撈掉，蓋鍋蓋轉小火。",
+        wait:900, label:"Simmering", labelZh:"燉煮中",
+        tip:"Fifteen minutes free. Potato should give way to a chopstick when it is ready.",
+        tipZh:"十五分鐘空檔。筷子能戳進馬鈴薯就是好了。" },
+      { text:"Heat off before the roux goes in — it dissolves properly that way. Stir it until it is gone.",
+        zh:"先關火再放咖哩塊，這樣才化得開。攪到完全溶掉。" },
+      { text:"Lowest heat again, and stir while it thickens. Do not let the bottom catch.",
+        zh:"再開最小火，一邊攪一邊讓它變稠，小心黏鍋。",
+        wait:300, label:"Thickening", labelZh:"等咖哩變稠",
+        tip:"Get the rice out now.",
+        tipZh:"趁現在把飯盛好。" }
+    ]
+  },
+  {
+    id:"braised_tofu", zh:"紅燒豆腐", en:"Braised Tofu", minutes:20,
+    blurb:"Fry it first and it will not fall apart on you.",
+    blurbZh:"先煎過，等下就不會散。",
+    keys:["紅燒豆腐","豆腐","板豆腐","braised tofu","tofu"],
+    ingredients:[
+      { zh:"板豆腐 1 塊（切厚片）", en:"1 block firm tofu, thick slices" },
+      { zh:"蒜末 3 瓣", en:"3 cloves garlic, chopped" },
+      { zh:"醬油 2 大匙", en:"2 tbsp soy sauce" },
+      { zh:"糖 1 小匙", en:"1 tsp sugar" },
+      { zh:"水 150 毫升", en:"150ml water" },
+      { zh:"蔥花 適量", en:"Chopped scallion" }
+    ],
+    steps:[
+      { text:"Slice the tofu a finger thick and pat every side dry with kitchen paper.",
+        zh:"豆腐切一指厚，每一面都用廚房紙巾壓乾。" },
+      { text:"Hot pan, oil, tofu in one layer. Now do not touch it — moving it early is what breaks it.",
+        zh:"熱鍋下油，豆腐平鋪一層。現在不要碰它，太早翻就是散掉的原因。",
+        wait:240, label:"First side browning", labelZh:"等第一面上色",
+        tip:"Four minutes. Chop the garlic and scallion.",
+        tipZh:"四分鐘。趁現在切蒜跟蔥花。" },
+      { text:"Flip them once. Golden on both sides is what you want.",
+        zh:"翻面一次，兩面金黃就對了。",
+        wait:180, label:"Second side browning", labelZh:"等第二面上色",
+        tip:"Mix the soy sauce, sugar and water in a cup.",
+        tipZh:"趁現在把醬油、糖、水在杯子裡調好。" },
+      { text:"Garlic into a gap in the pan, then pour the sauce round the edge.",
+        zh:"蒜末下鍋邊空位，然後醬汁沿著鍋邊淋進去。" },
+      { text:"Lid on, low heat, let it drink the sauce.",
+        zh:"蓋鍋蓋轉小火，讓豆腐把醬汁吸進去。",
+        wait:300, label:"Absorbing the sauce", labelZh:"等豆腐入味",
+        tip:"Five minutes. Shake the pan once, do not stir.",
+        tipZh:"五分鐘。可以晃一下鍋子，但不要用鏟子攪。" },
+      { text:"Lid off, higher heat for a moment to thicken the sauce, scallion on top.",
+        zh:"開蓋轉大火收一下醬汁，撒上蔥花。" }
+    ]
+  },
+  {
+    id:"beef_scallion", zh:"蔥爆牛肉", en:"Beef with Scallion", minutes:15,
+    blurb:"Thirty seconds in the pan. Everything else is preparation.",
+    blurbZh:"下鍋三十秒，其他都是準備工作。",
+    keys:["蔥爆牛肉","牛肉","蔥爆","beef","scallion beef","stir-fried beef"],
+    ingredients:[
+      { zh:"牛肉片 250 克", en:"250g sliced beef" },
+      { zh:"青蔥 4 支（切段）", en:"4 scallions, in sections" },
+      { zh:"薑絲 少許", en:"A little shredded ginger" },
+      { zh:"醬油 1 大匙", en:"1 tbsp soy sauce" },
+      { zh:"米酒 1 大匙", en:"1 tbsp rice wine" },
+      { zh:"太白粉 1 小匙", en:"1 tsp cornflour" }
+    ],
+    steps:[
+      { text:"Marinate the beef: soy sauce, rice wine, cornflour, mix it with your hand until it feels sticky.",
+        zh:"牛肉抓醃：醬油、米酒、太白粉，用手抓到有點黏。",
+        wait:300, label:"Beef marinating", labelZh:"等牛肉入味",
+        tip:"Five minutes. Cut the scallion into finger lengths, white and green kept apart.",
+        tipZh:"五分鐘。把蔥切成一指長，蔥白蔥綠分開放。" },
+      { text:"Get the pan properly hot — smoking faintly. This dish lives or dies on that.",
+        zh:"鍋子要燒到真的很熱，微微冒煙。這道菜成敗就看這個。",
+        wait:90, label:"Pan heating", labelZh:"等鍋燒熱",
+        tip:"Everything should be within arm's reach now.",
+        tipZh:"所有東西現在都要放在手邊。" },
+      { text:"Oil, then the beef spread out flat. Leave it ten seconds, then stir it loose and take it out while it is still pink in places.",
+        zh:"下油，牛肉平鋪下去。停十秒再炒散，還有一點粉紅就先盛起來。" },
+      { text:"Same pan, ginger and the white parts of the scallion.",
+        zh:"同一個鍋，下薑絲和蔥白。",
+        wait:30, label:"Scallion whites frying", labelZh:"炒蔥白",
+        tip:"Beef and green parts go back in together.",
+        tipZh:"等下牛肉跟蔥綠一起回鍋。" },
+      { text:"Beef back in with the green parts, toss three times, off the heat. Any longer and it goes tough.",
+        zh:"牛肉和蔥綠一起回鍋，翻三下就關火。再久就老了。" }
+    ]
+  },
+  {
+    id:"sweet_sour_ribs", zh:"糖醋排骨", en:"Sweet and Sour Ribs", minutes:35,
+    blurb:"Sticky, shiny, and gone in five minutes.",
+    blurbZh:"油亮黏嘴，五分鐘就會被吃光。",
+    keys:["糖醋排骨","排骨","糖醋","sweet and sour","ribs","pork ribs"],
+    ingredients:[
+      { zh:"小排骨 500 克", en:"500g pork ribs" },
+      { zh:"蒜末 3 瓣", en:"3 cloves garlic, chopped" },
+      { zh:"醬油 2 大匙", en:"2 tbsp soy sauce" },
+      { zh:"烏醋 3 大匙", en:"3 tbsp black vinegar" },
+      { zh:"糖 3 大匙", en:"3 tbsp sugar" },
+      { zh:"米酒 1 大匙", en:"1 tbsp rice wine" }
+    ],
+    steps:[
+      { text:"Rinse the ribs and cover them with cold water in a pot. Bring it to a boil and pour the whole lot away — that is the smell gone.",
+        zh:"排骨沖一下，放冷水鍋裡煮滾，整鍋倒掉，腥味就跟著走了。",
+        wait:420, label:"Blanching", labelZh:"汆燙中",
+        tip:"Mix the sauce meanwhile: soy sauce, vinegar, sugar, rice wine.",
+        tipZh:"趁現在調醬汁：醬油、烏醋、糖、米酒。" },
+      { text:"Rinse the ribs under the tap and dry them.",
+        zh:"排骨用水沖乾淨，擦乾。" },
+      { text:"A little oil, ribs in, brown them on all sides.",
+        zh:"下一點油，排骨下鍋，各面煎上色。",
+        wait:300, label:"Ribs browning", labelZh:"等排骨上色",
+        tip:"Turn them every minute or so.",
+        tipZh:"大概每分鐘翻一次。" },
+      { text:"Garlic in, then the sauce and enough water to almost cover. Boil, then lid on, low heat.",
+        zh:"蒜末下鍋，倒入醬汁，加水到快淹過排骨。煮滾後蓋鍋蓋轉小火。",
+        wait:1200, label:"Braising", labelZh:"燉煮中",
+        tip:"Twenty minutes free. This is the part where it becomes tender.",
+        tipZh:"二十分鐘空檔，肉就是在這段時間變軟的。" },
+      { text:"Lid off, heat up, and reduce it until the sauce coats the ribs. Keep turning them or the sugar will catch.",
+        zh:"開蓋轉大火收汁，收到醬汁裹住排骨。要一直翻，不然糖會燒焦。",
+        wait:300, label:"Reducing", labelZh:"收汁中",
+        tip:"Stay with it now — this is the only part that can burn.",
+        tipZh:"這段要顧著，只有這裡會燒焦。" }
+    ]
+  },
+  {
+    id:"chicken_soup", zh:"香菇雞湯", en:"Chicken and Mushroom Soup", minutes:45,
+    blurb:"Almost nothing to do. The pot does all of it.",
+    blurbZh:"幾乎不用做什麼，鍋子自己會處理。",
+    keys:["香菇雞湯","雞湯","香菇","湯","chicken soup","mushroom soup","soup"],
+    ingredients:[
+      { zh:"帶骨雞腿 2 隻（切塊）", en:"2 chicken legs, cut up" },
+      { zh:"乾香菇 6 朵", en:"6 dried shiitake" },
+      { zh:"薑 4 片", en:"4 slices ginger" },
+      { zh:"米酒 2 大匙", en:"2 tbsp rice wine" },
+      { zh:"鹽 適量", en:"Salt" },
+      { zh:"水 1200 毫升", en:"1200ml water" }
+    ],
+    steps:[
+      { text:"Soak the dried mushrooms in warm water. Keep the soaking water — that is half the flavour.",
+        zh:"乾香菇用溫水泡開。泡香菇的水留著，一半的味道都在裡面。",
+        wait:900, label:"Mushrooms soaking", labelZh:"泡香菇",
+        tip:"Fifteen minutes. Blanch the chicken while they soak — next step.",
+        tipZh:"十五分鐘。趁現在汆燙雞肉，就是下一步。" },
+      { text:"Chicken into cold water in a pot, bring it to a boil, skim the grey foam, then pour it away and rinse the pieces.",
+        zh:"雞肉冷水下鍋煮滾，把灰色浮沫撈掉，整鍋倒掉，雞肉沖乾淨。",
+        wait:480, label:"Blanching", labelZh:"汆燙中",
+        tip:"This is what makes the soup clear instead of cloudy.",
+        tipZh:"這一步就是湯會清不會濁的原因。" },
+      { text:"Chicken, ginger, mushrooms, the soaking water and 1200ml of fresh water into the pot. Boil, then lowest heat with the lid on.",
+        zh:"雞肉、薑片、香菇、泡香菇的水，再加 1200 毫升水進鍋。煮滾後轉最小火蓋鍋蓋。",
+        wait:1800, label:"Simmering", labelZh:"燉煮中",
+        tip:"Thirty minutes. Nothing to do at all — sit down.",
+        tipZh:"三十分鐘，完全沒事可做，坐下來休息。" },
+      { text:"Rice wine in, salt to taste, two more minutes and it is done.",
+        zh:"加米酒，鹽調味，再煮兩分鐘就完成。",
+        wait:120, label:"Finishing", labelZh:"收尾",
+        tip:"Taste before you salt — it is saltier than you think.",
+        tipZh:"加鹽前先嘗，通常比你以為的鹹。" }
+    ]
+  },
+  {
+    id:"daikon_soup", zh:"蘿蔔排骨湯", en:"Daikon and Pork Rib Soup", minutes:50,
+    blurb:"Winter in a bowl. The radish goes see-through and sweet.",
+    blurbZh:"一碗冬天。蘿蔔會煮到透明、煮到甜。",
+    keys:["蘿蔔湯","白蘿蔔","排骨湯","蘿蔔排骨湯","湯","daikon","radish","pork rib soup","soup"],
+    ingredients:[
+      { zh:"排骨 400 克", en:"400g pork ribs" },
+      { zh:"白蘿蔔 1 條（切塊）", en:"1 daikon, chunked" },
+      { zh:"薑 3 片", en:"3 slices ginger" },
+      { zh:"鹽 適量", en:"Salt" },
+      { zh:"水 1500 毫升", en:"1500ml water" },
+      { zh:"蔥花 適量", en:"Chopped scallion" }
+    ],
+    steps:[
+      { text:"Ribs into cold water, bring to a boil, skim, then pour it all away and rinse them.",
+        zh:"排骨冷水下鍋煮滾，撈浮沫，整鍋倒掉，排骨沖乾淨。",
+        wait:480, label:"Blanching", labelZh:"汆燙中",
+        tip:"Peel the daikon and cut it into thick chunks while this goes.",
+        tipZh:"趁這時候把白蘿蔔削皮、切大塊。" },
+      { text:"Ribs, ginger and 1500ml of fresh water in the pot. Boil, then lowest heat.",
+        zh:"排骨、薑片、1500 毫升新的水下鍋。煮滾後轉最小火。",
+        wait:1200, label:"Ribs simmering", labelZh:"排骨先燉",
+        tip:"Twenty minutes. The radish goes in after this.",
+        tipZh:"二十分鐘。蘿蔔等下才下。" },
+      { text:"Daikon in. It goes in later than the ribs or it turns to mush.",
+        zh:"白蘿蔔下鍋。它比排骨晚下，不然會煮到爛掉。",
+        wait:1200, label:"Daikon softening", labelZh:"等蘿蔔變透明",
+        tip:"When it looks see-through it is ready.",
+        tipZh:"看起來透明就好了。" },
+      { text:"Salt to taste, scallion on top, heat off.",
+        zh:"加鹽調味，撒蔥花，關火。" }
+    ]
+  },
+  {
+    id:"congee", zh:"皮蛋瘦肉粥", en:"Century Egg and Pork Congee", minutes:40,
+    blurb:"Stir it now and then and it turns creamy on its own.",
+    blurbZh:"偶爾攪一攪，它自己就會變濃稠。",
+    keys:["粥","皮蛋瘦肉粥","皮蛋","瘦肉粥","congee","porridge","century egg"],
+    ingredients:[
+      { zh:"白米 1 杯", en:"1 cup rice" },
+      { zh:"皮蛋 2 顆（切塊）", en:"2 century eggs, chopped" },
+      { zh:"豬絞肉 或 肉絲 150 克", en:"150g minced or shredded pork" },
+      { zh:"薑絲 少許", en:"A little shredded ginger" },
+      { zh:"鹽 適量", en:"Salt" },
+      { zh:"水 1800 毫升", en:"1800ml water" }
+    ],
+    steps:[
+      { text:"Rinse the rice, then rub a little oil into it. Oiled rice breaks down faster.",
+        zh:"米洗好，拌一點油。拌過油的米比較快煮開花。" },
+      { text:"Rice and 1800ml of water into the pot. Bring it to a boil, then straight down to the lowest heat.",
+        zh:"米和 1800 毫升水下鍋。煮滾之後馬上轉最小火。",
+        wait:600, label:"Coming to a boil", labelZh:"等水滾",
+        tip:"Ten minutes. Chop the century eggs and the ginger while it heats.",
+        tipZh:"十分鐘。趁現在切皮蛋、切薑絲。" },
+      { text:"Stir it every few minutes so the bottom does not catch, and keep it barely bubbling.",
+        zh:"每隔幾分鐘攪一下，不要讓底部黏鍋，維持微微冒泡。",
+        wait:1200, label:"Rice breaking down", labelZh:"等米粒開花",
+        tip:"Twenty minutes. Stir when you walk past.",
+        tipZh:"二十分鐘。經過的時候攪一下就好。" },
+      { text:"Pork in, stirred loose so it does not clump, then the ginger.",
+        zh:"肉下鍋，攪散不要結塊，再下薑絲。",
+        wait:300, label:"Pork cooking", labelZh:"等肉熟",
+        tip:"Nearly there.",
+        tipZh:"快好了。" },
+      { text:"Century egg in, salt to taste, and give it two more minutes.",
+        zh:"皮蛋下鍋，加鹽調味，再煮兩分鐘。",
+        wait:120, label:"Finishing", labelZh:"收尾",
+        tip:"White pepper on top is very good, if you have it.",
+        tipZh:"有白胡椒的話撒一點，很搭。" }
+    ]
+  },
+  {
+    id:"fried_noodles", zh:"炒米粉", en:"Taiwanese Fried Rice Noodles", minutes:25,
+    blurb:"The rice noodles only need soaking, not boiling. That is the whole secret.",
+    blurbZh:"米粉只要泡，不要煮。秘訣就這一句。",
+    keys:["炒米粉","米粉","fried rice noodles","rice vermicelli","bee hoon"],
+    ingredients:[
+      { zh:"米粉 2 把", en:"2 bundles rice vermicelli" },
+      { zh:"豬肉絲 150 克", en:"150g shredded pork" },
+      { zh:"乾香菇 4 朵（泡軟切絲）", en:"4 dried shiitake, soaked and sliced" },
+      { zh:"高麗菜 1/4 顆（切絲）", en:"¼ cabbage, shredded" },
+      { zh:"紅蘿蔔 半根（切絲）", en:"½ carrot, shredded" },
+      { zh:"醬油 2 大匙", en:"2 tbsp soy sauce" },
+      { zh:"白胡椒 適量", en:"White pepper" }
+    ],
+    steps:[
+      { text:"Soak the mushrooms in warm water and keep that water.",
+        zh:"乾香菇用溫水泡開，水留著。",
+        wait:600, label:"Mushrooms soaking", labelZh:"泡香菇",
+        tip:"Ten minutes. Shred the cabbage and carrot now.",
+        tipZh:"十分鐘。趁現在切高麗菜絲、紅蘿蔔絲。" },
+      { text:"Soak the rice noodles in warm water until they bend but still have a core.",
+        zh:"米粉泡溫水，泡到會彎、但中間還有一點硬芯。",
+        wait:300, label:"Noodles softening", labelZh:"泡米粉",
+        tip:"Do not over-soak them or they break in the pan.",
+        tipZh:"不要泡太久，等下會炒斷。" },
+      { text:"Oil, pork in, then the mushrooms. Fry until you can smell them.",
+        zh:"下油，肉絲下鍋，再下香菇絲，炒到香味出來。",
+        wait:120, label:"Pork and mushroom frying", labelZh:"炒肉和香菇",
+        tip:"Have the vegetables ready.",
+        tipZh:"蔬菜先準備好。" },
+      { text:"Carrot then cabbage, and stir until the cabbage goes soft.",
+        zh:"先紅蘿蔔再高麗菜，炒到高麗菜變軟。",
+        wait:180, label:"Vegetables softening", labelZh:"等菜變軟",
+        tip:"Almost time for the noodles.",
+        tipZh:"米粉快下了。" },
+      { text:"Drained noodles in, soy sauce, the mushroom water, white pepper. Lift and turn with chopsticks instead of stirring — stirring breaks them.",
+        zh:"米粉瀝乾下鍋，加醬油、香菇水、白胡椒。用筷子挑起來翻，不要用攪的，攪會斷。",
+        wait:240, label:"Noodles drinking the sauce", labelZh:"等米粉吸湯汁",
+        tip:"Add a splash of water if the pan looks dry.",
+        tipZh:"鍋子看起來乾就再加一點水。" },
+      { text:"All the liquid gone? Then it is done. Fried shallots on top if you have them.",
+        zh:"湯汁收乾就完成了。有油蔥酥的話撒一點。" }
+    ]
+  },
+  {
+    id:"pepper_pork", zh:"青椒炒肉絲", en:"Pepper and Pork Stir-fry", minutes:15,
+    blurb:"Green pepper, kept crunchy, which is the only hard part.",
+    blurbZh:"青椒要保持脆，這是唯一的難處。",
+    keys:["青椒","青椒炒肉絲","肉絲","green pepper","bell pepper","pork"],
+    ingredients:[
+      { zh:"青椒 2 顆（切絲）", en:"2 green peppers, sliced" },
+      { zh:"豬肉絲 200 克", en:"200g shredded pork" },
+      { zh:"蒜末 2 瓣", en:"2 cloves garlic, chopped" },
+      { zh:"醬油 1 大匙", en:"1 tbsp soy sauce" },
+      { zh:"太白粉 1 小匙", en:"1 tsp cornflour" }
+    ],
+    steps:[
+      { text:"Marinate the pork with soy sauce and cornflour, mixed in with your hand.",
+        zh:"豬肉絲用醬油和太白粉抓醃，用手抓勻。",
+        wait:180, label:"Pork marinating", labelZh:"等肉入味",
+        tip:"Three minutes. Slice the peppers and take the seeds out.",
+        tipZh:"三分鐘。趁現在切青椒、去籽。" },
+      { text:"Hot pan, oil, pork spread flat. Leave it, then stir it loose and take it out.",
+        zh:"熱鍋下油，肉絲平鋪。先不要動，再炒散，然後盛起來。",
+        wait:120, label:"Pork cooking", labelZh:"炒肉絲",
+        tip:"Do not overcook it — it goes back in later.",
+        tipZh:"不要炒過頭，等下還要回鍋。" },
+      { text:"Same pan, garlic, then the peppers on high heat.",
+        zh:"同一個鍋，下蒜末，再下青椒，大火。",
+        wait:90, label:"Peppers frying", labelZh:"炒青椒",
+        tip:"They should stay bright green.",
+        tipZh:"青椒要保持翠綠。" },
+      { text:"Pork back in, soy sauce round the edge of the pan, toss it all together and stop there.",
+        zh:"肉絲回鍋，醬油沿鍋邊淋，全部拌勻就停手。",
+        wait:30, label:"Finishing", labelZh:"收尾",
+        tip:"Longer than this and the pepper goes limp.",
+        tipZh:"再久青椒就軟掉了。" }
+    ]
+  },
+  {
+    id:"soy_chicken", zh:"醬燒雞腿", en:"Soy Braised Chicken Drumsticks", minutes:30,
+    blurb:"Brown it, braise it, reduce it. Three moves.",
+    blurbZh:"煎、燜、收汁。三個動作。",
+    keys:["醬燒雞腿","雞腿","滷雞腿","醬油雞","soy chicken","braised chicken","drumstick"],
+    ingredients:[
+      { zh:"棒棒腿 4 隻", en:"4 chicken drumsticks" },
+      { zh:"蒜頭 4 瓣", en:"4 cloves garlic" },
+      { zh:"薑 3 片", en:"3 slices ginger" },
+      { zh:"醬油 3 大匙", en:"3 tbsp soy sauce" },
+      { zh:"米酒 2 大匙", en:"2 tbsp rice wine" },
+      { zh:"冰糖 1 大匙", en:"1 tbsp rock sugar" },
+      { zh:"水 200 毫升", en:"200ml water" }
+    ],
+    steps:[
+      { text:"Dry the drumsticks and cut two slits to the bone in each — they cook through evenly that way.",
+        zh:"雞腿擦乾，每支劃兩刀到骨頭，這樣才會熟得均勻。" },
+      { text:"A little oil, drumsticks in, brown them all over.",
+        zh:"下一點油，雞腿下鍋，各面煎上色。",
+        wait:360, label:"Browning", labelZh:"等雞腿上色",
+        tip:"Six minutes. Turn them every minute or so.",
+        tipZh:"六分鐘，大概每分鐘翻一次。" },
+      { text:"Garlic and ginger in, then soy sauce, rice wine, rock sugar and the water.",
+        zh:"蒜頭和薑片下鍋，再加醬油、米酒、冰糖和水。" },
+      { text:"Boil, then lid on and low heat. Turn them once halfway.",
+        zh:"煮滾後蓋鍋蓋轉小火，中途翻一次面。",
+        wait:900, label:"Braising", labelZh:"燜煮中",
+        tip:"Fifteen minutes. Rice on now if you want it with this.",
+        tipZh:"十五分鐘。想配飯的話現在去煮。" },
+      { text:"Lid off, heat up, spoon the sauce over them until it goes glossy and thick.",
+        zh:"開蓋轉大火，一邊把醬汁淋在雞腿上，收到油亮濃稠。",
+        wait:240, label:"Reducing", labelZh:"收汁中",
+        tip:"Keep spooning — that is where the shine comes from.",
+        tipZh:"一直淋，油亮就是這樣來的。" }
+    ]
   }
 ];
 
-const STAGE_ZH = { idle:"待命", picking:"選菜", cooking:"下鍋", waiting:"等待", done:"完成" };
+const STAGE_ZH = { idle:"待命", picking:"選菜", prep:"備料", cooking:"下鍋", waiting:"等待", done:"完成" };
 
 /* ---- state ----------------------------------------------------- */
 
 const STORE_KEY = "yuanyuan.cook.v3";
 let stage = "idle", recipe = null, stepIdx = -1, matched = [];
+let pendingRecipe = null;   // chosen, ingredients read out, not started yet
 
 function saveState(){
   try{ localStorage.setItem(STORE_KEY, JSON.stringify({ id: recipe && recipe.id, stepIdx })); }catch(e){}
@@ -794,13 +1506,13 @@ function clearTimer(){
   timerEl.classList.remove("on","rang");
 }
 
-/* A kitchen timer going off: three sharp beeps every second, for eight
+/* A kitchen timer going off: three sharp beeps every second, for five
    seconds — long enough to hear from the sink with the fan on.
 
    It rides the playback context on purpose. A fresh AudioContext created here
    starts suspended, because a timer finishing is not a user gesture — that is
    a silent chime on every phone. playCtx is already running. */
-const CHIME_SECONDS = 8;
+const CHIME_SECONDS = 5;
 let lastUserAt = 0;
 
 function chime(){
@@ -877,11 +1589,27 @@ const TOOLS = {
     return { matches: scored.map(x => ({ dish:x.r.en, dish_zh:x.r.zh, minutes:x.r.minutes })) };
   },
 
-  start_recipe({ dish }){
+  /* Before any cutting or heating: what they need on the counter. The steps
+     do not start here — they start when they say they have it all. */
+  prep_list({ dish }){
     const r = findRecipe(dish);
-    if(!r) return { error:`"${dish}" is not in the book. Do not push them onto another dish — offer to improvise it: say you have not made it before, ask if they want you to try, and call improvise_recipe once they say yes.`,
+    if(!r) return { in_book:false, dish,
+                    message:"Not in the book. Work the ingredient list out yourself, read it to them and ask what they have — never tell them you have not made it. Once they are ready, call improvise_recipe.",
                     book: RECIPES.map(x => x.en) };
-    recipe = r; stepIdx = 0; matched = [];
+    pendingRecipe = r; recipe = null; stepIdx = -1; matched = [];
+    clearTimer(); setStage("prep");
+    say("PREP", r.en + " — " + r.ingredients.length + " things to get out", "act",
+        r.zh + " — 要準備 " + r.ingredients.length + " 樣：" + r.ingredients.map(i => i.zh).join("、"));
+    return { in_book:true, dish:r.en, dish_zh:r.zh, minutes:r.minutes, total_steps:r.steps.length,
+             ingredients: r.ingredients.map(i => ({ en:i.en, zh:i.zh })),
+             message:"Read this list out in one short breath and ask what they are missing. Offer a substitute for anything they do not have. Call start_recipe only once they say they are ready." };
+  },
+
+  start_recipe({ dish }){
+    const r = findRecipe(dish) || pendingRecipe;
+    if(!r) return { error:`"${dish}" is not in the book. Do not push them onto another dish and never say you have not made it — call prep_list first, then improvise_recipe once they have what they need.`,
+                    book: RECIPES.map(x => x.en) };
+    recipe = r; stepIdx = 0; matched = []; pendingRecipe = null;
     clearTimer(); setStage("cooking"); saveState();
     say("RECIPE", r.en + " — " + r.steps.length + " steps", "act", r.zh + " — 共 " + r.steps.length + " 步");
     const first = recipe.steps[0];
@@ -935,7 +1663,7 @@ const TOOLS = {
         en: String(i && i.en || i || ""), zh: String(i && i.zh || i && i.en || i || "") })),
       steps: clean
     };
-    stepIdx = 0; matched = [];
+    stepIdx = 0; matched = []; pendingRecipe = null;
     clearTimer(); setStage("cooking"); saveState();
     say("RECIPE", recipe.en + " — " + clean.length + " steps · improvised",
         "act", recipe.zh + " — 共 " + clean.length + " 步 · 即席");
@@ -999,6 +1727,11 @@ const TOOL_SCHEMA = [
   { type:"function", name:"repeat_step",
     description:"Get the current step again, word for word, when they missed it.",
     parameters:{ type:"object", properties:{} } },
+  { type:"function", name:"prep_list",
+    description:"What they need on the counter for a dish, before any cutting or heating. Call this the moment they name a dish, or when they say what they have. It does NOT start the steps.",
+    parameters:{ type:"object", properties:{
+      dish:{ type:"string", description:"The dish they named, in Chinese or English" }
+    }, required:["dish"] } },
   { type:"function", name:"show_subtitle",
     description:"Put the Traditional Chinese of what you are ABOUT to say on the screen, then say it in English. Call this once at the start of your turn, before you speak. Never after speaking, and never twice in one turn.",
     parameters:{ type:"object", properties:{
@@ -1040,19 +1773,37 @@ Your tone follows the stage that the tools hand back:
   story about food, react to what they say. Do NOT announce the countdown, do NOT push them on.
 - done: proud of them for a sentence, then get out of the way.
 
-IF YOU ONLY CAUGHT HALF A SENTENCE:
-Their hands are busy and they pause to think, so what reaches you is sometimes a fragment —
-"I want to", "let me see", "can we", a single stray word. A fragment names no dish, no
-ingredient, and asks nothing. Do NOT answer it and do NOT guess what was coming. Say one
-short sound — "Mm-hm?" — and stop immediately. They are still talking; the rest of the
-sentence is on its way, and every second you spend talking is a second they cannot reach you.
+LET THEM FINISH:
+They are cooking, so they stop mid-sentence to look in a pan or to think. Assume there is
+more coming. Before you say anything, ask yourself whether that could be the first half of
+a sentence: it names no dish and no ingredient, it asks nothing, it trails off on "and",
+"then", "I want to", "can we", or it is a single stray word. If so, you have not heard them
+yet. Say one short sound — "Mm-hm?" — or nothing at all, and wait. Never guess the rest,
+never answer half a sentence, and never start a new subject of your own while they are
+mid-sentence.
+The only reason to cut in without waiting is danger: something burning, oil catching fire,
+a pot boiling over, or they ask you to stop. Then speak immediately and keep it to a few words.
 
-THE MOMENT THEY NAME A DISH:
-Call start_recipe straight away. Do not answer "great, let's get started" and stop — a turn
-that ends without a step in it leaves them standing in the kitchen with nothing to do.
-The tool hands you step one; in that same turn, show its instruction_zh as the subtitle and
-read step one out loud. Only then stop and wait.
-The same goes for suggest_dishes: once they pick one of the matches, go straight to start_recipe.
+THE MOMENT THEY NAME A DISH — INGREDIENTS FIRST, ALWAYS:
+Nobody wants to be told to heat the pan and then find out the garlic ran out. So:
+1. Call prep_list with the dish. It hands you everything they need.
+2. Read the list out in one short breath — the whole list, quantities included — and ask
+   what they are missing. Nothing else in that turn. No steps yet.
+3. They answer. Go through what they said against the list and say plainly what is missing.
+4. Missing something? Offer the way round it, do not send them to the shop and do not
+   quietly change the dish. The usual swaps:
+   - no rice wine: use any cooking wine, or leave it out
+   - no sesame oil: any oil; no butter: oil
+   - no rock sugar: ordinary sugar; no black vinegar: any vinegar with a pinch of sugar
+   - no shallots: onion; no Thai basil: leave it out, it is smell not structure
+   - no bonito flakes: stock powder, or just salt
+   - no cornflour: potato starch, or skip the marinade coating
+   - a vegetable missing: any other vegetable of the same kind goes in
+   Only when the main thing is missing — no eggs for an omelette, no chicken for chicken
+   soup — do you say it honestly and offer two dishes they can make with what they have.
+5. When they say they are ready, call start_recipe and read step one out in that same turn.
+   Step one is where the cutting and the hot pan begin, never before.
+The same goes for suggest_dishes: once they pick one of the matches, prep_list first.
 
 WHEN A TIMER ENDS:
 A kitchen gives you no way to tap someone on the shoulder, so when a timer runs out you will
@@ -1063,12 +1814,13 @@ came with the step you read out — so name the thing itself, not the timer: "wa
 going by now" beats "your timer finished". Then ask how it looks and stop. One short line;
 their hands are probably still busy.
 
-A DISH THAT IS NOT IN THE BOOK:
-The book holds ten dishes. When they name something else, do not pretend it is in there and
-do not steer them onto a different dish — that is the moment a kitchen companion becomes
-useless. Say it plainly in one short line: you have not made this one before, do they want
-you to try it with them? If they say yes, work the whole thing out — four to eight steps in
-order, and for each one, honestly how many seconds their hands are free — then call
+A DISH THE BOOK DOES NOT HAVE:
+You cook everything. Never say you have not made a dish before, never say it is not in your
+book, never steer them onto a different one — as far as they are concerned you know it.
+prep_list will tell you it is not in the book; that is for you, not for them. In that case
+work the ingredient list out yourself and read it out exactly as you would any other dish,
+same as step 2 above. Then, when they are ready, work the whole thing out — four to eight
+steps in order, and for each one, honestly how many seconds their hands are free — call
 improvise_recipe ONCE with all of it, and read step one out in the same turn.
 Improvised cooking stays ordinary and safe: chicken and pork cooked through, heat where a
 home cook would put it, no technique you cannot explain in a single sentence. If you are not
@@ -1116,6 +1868,7 @@ const GREETING = { en:"Hey, I'm here. What are we making?", zh:"我在喔，今�
 const GREETING_ZH = "我在喔，今天想煮什麼？";
 
 const KEYTERMS = [
+  "蔥蛋","蒜炒高麗菜","高麗菜","空心菜","番茄蛋花湯","蛋花湯","蛤蜊絲瓜","絲瓜","蛤蜊","塔香茄子","茄子","豆干炒肉絲","豆干","洋蔥炒蛋","蒸蛋","涼拌小黃瓜","小黃瓜","咖哩雞","咖哩","紅燒豆腐","蔥爆牛肉","牛肉","糖醋排骨","排骨","香菇雞湯","雞湯","香菇","蘿蔔排骨湯","白蘿蔔","皮蛋瘦肉粥","皮蛋","粥","炒米粉","米粉","青椒炒肉絲","青椒","醬燒雞腿","棒棒腿","馬鈴薯","紅蘿蔔","豬肉絲","絞肉","九層塔","薑","米酒","香油","烏醋",
   "泡麵","泡麵升級版","番茄炒蛋","炒飯","蒜香奶油炒飯",
   "三杯雞","滷肉飯","魯肉飯","麻婆豆腐","玉米濃湯","味噌湯","味噌豆腐湯","香煎雞腿排","雞腿排","炒青菜","蒜炒時蔬",
   "豆腐","絞肉","五花肉","九層塔","洋蔥","玉米","味噌","高麗菜","空心菜",
@@ -1291,15 +2044,14 @@ async function start(){
         input:{
           format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE },
           keyterms: KEYTERMS,
-          // Transcription stays on the default (balanced). Measured 9/17 on the live
-          // API with the real prompt: max_accuracy heard the same words but answered
-          // ~0.25 s later; balanced with the silences below answered ~0.1 s sooner
-          // than build 17. Quick hand-over: 1 s of silence after a finished sentence,
-          // 2.2 s at most when it sounds unfinished (the 9/11 values). vad 0.4 picks
-          // up a quieter voice across the kitchen. A stray half-sentence gets "Mm-hm?".
+          // Let them finish. 2 s of silence after a sentence that sounds complete,
+          // 4 s when it sounds unfinished — cooking pauses are long, and taking the
+          // turn early is worse than answering late. vad 0.4 picks up a quieter voice
+          // across the kitchen. Transcription stays on the default (balanced):
+          // measured 9/17 on the live API, max_accuracy heard the same words ~0.25 s later.
           // interrupt_response stays off: the microphone is shut while it talks
           // (build 11 audio), so it cannot cut itself off.
-          turn_detection:{ vad_threshold:0.4, min_silence:1000, max_silence:2200, interrupt_response: false }
+          turn_detection:{ vad_threshold:0.4, min_silence:2000, max_silence:4000, interrupt_response: false }
         },
         output:{ voice:"anna", format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } },
         tools: TOOL_SCHEMA
@@ -1522,7 +2274,7 @@ function sendMicChunk(arrayBuffer){
    screenshot of the corner is enough to tell what happened. */
 function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 19 · 09-17 · " + txt;
+  if(el) el.textContent = "build 20 · 09-18 · " + txt;
 }
 
 function toBase64(arrayBuffer){
