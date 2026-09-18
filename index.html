@@ -145,6 +145,9 @@
   button.mic.on{background:var(--warm);color:#fff;box-shadow:0 8px 28px rgba(224,112,90,.26)}
   button.mic svg{width:17px;height:17px}
   .settings .off{opacity:.45;pointer-events:none}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--muted);font-family:var(--font);
+    font-size:12px;padding:6px 13px;border-radius:999px;cursor:pointer;order:2}
+  button.ghost:hover{color:var(--text);border-color:var(--muted)}
 </style>
 </head>
 <body>
@@ -185,6 +188,7 @@
 
 <div class="bar">
   <div class="turn" id="turn" hidden><span class="ring"></span><b id="turnText"></b><span class="zh" id="turnZh"></span><span class="meter"><i id="meterFill"></i></span></div>
+  <button class="ghost" id="newChat" title="Forget what we were doing and start clean">新對話 New chat</button>
   <button class="mic" id="micBtn">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
@@ -195,7 +199,7 @@
 </div>
 
 <div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
-<div class="build">build 21 · 09-18</div>
+<div class="build">build 22 · 09-18</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -1291,17 +1295,54 @@ const STAGE_ZH = { idle:"待命", picking:"選菜", prep:"備料", cooking:"下�
 
 /* ---- state ----------------------------------------------------- */
 
-const STORE_KEY = "yuanyuan.cook.v3";
+const STORE_KEY = "yuanyuan.cook.v4";
+
+/* What was said before. Pressing the button opens a brand new session with the
+   API, and a session starts with no history at all — which is why it used to
+   forget everything the moment they stopped and started again. So we keep the
+   conversation here and hand the last stretch of it back to the new session in
+   its instructions. Only the last stretch: a whole evening of chatter pasted
+   into a prompt is how an agent starts contradicting itself. */
+const MEMORY_TURNS = 12, MEMORY_CHARS = 160;
+let convoLog = [];
+
+function remember(who, text){
+  const t = String(text || "").trim();
+  if(!t) return;
+  convoLog.push({ who, t: t.slice(0, MEMORY_CHARS) });
+  if(convoLog.length > MEMORY_TURNS * 2) convoLog = convoLog.slice(-MEMORY_TURNS * 2);
+  saveState();
+}
+
+function memoryBlock(){
+  const lines = convoLog.slice(-MEMORY_TURNS * 2)
+    .map(x => (x.who === "you" ? "- them: " : "- you: ") + x.t);
+  if(!lines.length && !recipe) return "";
+  let where = "";
+  if(recipe){
+    where = stepIdx >= recipe.steps.length
+      ? `\nWhere things stand: they finished ${recipe.en} (${recipe.zh}).`
+      : `\nWhere things stand: ${recipe.en} (${recipe.zh}), step ${stepIdx + 1} of ${recipe.steps.length}. The clock is not running.`;
+  }
+  return `
+
+EARLIER IN THIS KITCHEN — you were already talking to them:
+${lines.join("\n")}${where}
+Carry straight on from this. Do not read it back to them, do not greet them like a
+stranger, and do not start the dish again from the top. If they pick up mid-sentence,
+they mean the sentence above.`;
+}
 let stage = "idle", recipe = null, stepIdx = -1, matched = [];
 let pendingRecipe = null;   // chosen, ingredients read out, not started yet
 
 function saveState(){
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify({ id: recipe && recipe.id, stepIdx })); }catch(e){}
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({ id: recipe && recipe.id, stepIdx, convo: convoLog })); }catch(e){}
 }
 function loadState(){
   try{
     const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
     if(!s) return;
+    if(Array.isArray(s.convo)) convoLog = s.convo.slice(-MEMORY_TURNS * 2);
     const r = RECIPES.find(x => x.id === s.id);
     if(r && s.stepIdx >= 0 && s.stepIdx < r.steps.length){ recipe = r; stepIdx = s.stepIdx; stage = "cooking"; }
   }catch(e){}
@@ -1390,6 +1431,7 @@ function commitPartial(text){
     partialLine.querySelector(".en").textContent = text;
     partialLine = null;
   } else say("YOU", text, "you");
+  remember("you", text);
 }
 
 let agentLine = null, agentBuf = "";
@@ -1405,6 +1447,7 @@ function showAgentPartial(text){
   feedEl.scrollTop = feedEl.scrollHeight;
 }
 function commitAgent(text){
+  remember("yuan", text);
   if(agentLine || text){
     const el = agentLineEl();
     el.classList.remove("partial");
@@ -1568,7 +1611,71 @@ function stepPayload(){
   };
 }
 
+/* For "I do not know what to make". Meal, mouths, taste, and how much cooking
+   they have done — four things that narrow thirty dishes down to three. */
+const DISH_TAGS = {
+  noodles:{meal:["breakfast","lunch","dinner","snack"],skill:1,taste:["light","savoury"],serves:1},
+  tomato_egg:{meal:["lunch","dinner"],skill:1,taste:["light","sour"],serves:2},
+  garlic_rice:{meal:["lunch","dinner","snack"],skill:1,taste:["rich","savoury"],serves:2},
+  pan_chicken:{meal:["lunch","dinner"],skill:2,taste:["rich","savoury"],serves:2},
+  three_cup:{meal:["dinner"],skill:2,taste:["rich","savoury"],serves:3},
+  braised_pork:{meal:["lunch","dinner"],skill:2,taste:["rich","savoury"],serves:4},
+  mapo:{meal:["lunch","dinner"],skill:2,taste:["spicy","rich"],serves:3},
+  corn_soup:{meal:["lunch","dinner","snack"],skill:1,taste:["light","sweet"],serves:3},
+  miso:{meal:["breakfast","lunch","dinner"],skill:1,taste:["light"],serves:3},
+  garlic_greens:{meal:["lunch","dinner"],skill:1,taste:["light"],serves:2},
+  scallion_egg:{meal:["breakfast","lunch"],skill:1,taste:["light","savoury"],serves:2},
+  cabbage:{meal:["lunch","dinner"],skill:1,taste:["light","sweet"],serves:3},
+  water_spinach:{meal:["lunch","dinner"],skill:1,taste:["light"],serves:2},
+  tomato_soup:{meal:["lunch","dinner"],skill:1,taste:["light","sour"],serves:3},
+  luffa_clam:{meal:["lunch","dinner"],skill:1,taste:["light","sweet"],serves:3},
+  basil_eggplant:{meal:["lunch","dinner"],skill:2,taste:["rich","savoury"],serves:3},
+  tofu_pork:{meal:["lunch","dinner"],skill:1,taste:["savoury"],serves:3},
+  onion_egg:{meal:["breakfast","lunch","dinner"],skill:1,taste:["sweet","light"],serves:2},
+  steamed_egg:{meal:["breakfast","lunch","dinner","snack"],skill:1,taste:["light"],serves:3},
+  cucumber:{meal:["lunch","dinner","snack"],skill:1,taste:["sour","light"],serves:3},
+  curry:{meal:["lunch","dinner"],skill:2,taste:["rich"],serves:4},
+  braised_tofu:{meal:["lunch","dinner"],skill:1,taste:["savoury"],serves:3},
+  beef_scallion:{meal:["dinner"],skill:2,taste:["savoury","rich"],serves:3},
+  sweet_sour_ribs:{meal:["dinner"],skill:3,taste:["sweet","sour","rich"],serves:4},
+  chicken_soup:{meal:["lunch","dinner"],skill:1,taste:["light"],serves:4},
+  daikon_soup:{meal:["lunch","dinner"],skill:1,taste:["light"],serves:4},
+  congee:{meal:["breakfast","snack","lunch"],skill:1,taste:["light"],serves:3},
+  fried_noodles:{meal:["breakfast","lunch","dinner"],skill:2,taste:["savoury"],serves:4},
+  pepper_pork:{meal:["lunch","dinner"],skill:1,taste:["savoury"],serves:3},
+  soy_chicken:{meal:["lunch","dinner"],skill:2,taste:["savoury","rich"],serves:3}
+};
+const SKILL_LEVEL = { never:1, beginner:1, some:2, ok:2, confident:3, good:3 };
+
 const TOOLS = {
+  /* They do not know what to make. Ask them the four things first, then call this. */
+  recommend_dishes({ meal, people, taste, skill, minutes }){
+    const want = String(taste || "").toLowerCase().split(/[,、\s]+/).filter(Boolean);
+    const cap = SKILL_LEVEL[String(skill || "").toLowerCase()] || (Number(skill) || 3);
+    const mouths = Number(people) || 0;
+    const mins = Number(minutes) || 0;
+    const scored = RECIPES.map(r => {
+      const t = DISH_TAGS[r.id];
+      if(!t) return null;
+      if(t.skill > cap) return null;                                  // beyond them today
+      if(meal && t.meal.indexOf(String(meal).toLowerCase()) === -1) return null;
+      if(mins && r.minutes > mins) return null;
+      let score = 0;
+      for(const w of want) if(t.taste.some(x => x.indexOf(w) !== -1 || w.indexOf(x) !== -1)) score += 2;
+      if(mouths){ score += (t.serves >= mouths ? 1 : -2 * (mouths - t.serves)); }
+      score += (3 - t.skill) * 0.5;
+      return { r, t, score };
+    }).filter(Boolean).sort((a,b) => b.score - a.score).slice(0, 3);
+
+    if(!scored.length) return { matches:[], message:"Nothing fits all of that. Loosen one thing — ask whether they mind it taking longer, or whether the meal matters." };
+    matched = scored.map(x => x.r.id);
+    setStage("picking");
+    say("PICK", scored.map(x => x.r.en).join(", "), "act", "推薦：" + scored.map(x => x.r.zh).join("、"));
+    return { matches: scored.map(x => ({ dish:x.r.en, dish_zh:x.r.zh, minutes:x.r.minutes,
+               serves:x.t.serves, easy: x.t.skill === 1, why:x.r.blurb, why_zh:x.r.blurbZh })),
+             message:"Offer two of these in one short line each. When they pick one, call prep_list." };
+  },
+
   suggest_dishes({ have }){
     const list = Array.isArray(have) ? have : String(have || "").split(/[,、\s]+/);
     const words = list.map(x => String(x).toLowerCase().trim()).filter(Boolean);
@@ -1739,6 +1846,15 @@ const TOOL_SCHEMA = [
   { type:"function", name:"repeat_step",
     description:"Get the current step again, word for word, when they missed it.",
     parameters:{ type:"object", properties:{} } },
+  { type:"function", name:"recommend_dishes",
+    description:"Pick dishes for someone who does not know what to cook. Ask them the questions first, then call this once with whatever they told you.",
+    parameters:{ type:"object", properties:{
+      meal:{ type:"string", description:"breakfast, lunch, dinner or snack" },
+      people:{ type:"number", description:"How many people are eating" },
+      taste:{ type:"string", description:"What they fancy: light, rich, spicy, sour, sweet, savoury" },
+      skill:{ type:"string", description:"never, some, or confident" },
+      minutes:{ type:"number", description:"Minutes they have, if they said" }
+    }, required:[] } },
   { type:"function", name:"prep_list",
     description:"What they need on the counter for a dish, before any cutting or heating. Call this the moment they name a dish, or when they say what they have. It does NOT start the steps.",
     parameters:{ type:"object", properties:{
@@ -1798,6 +1914,18 @@ never answer half a sentence, and never start a new subject of your own while th
 mid-sentence.
 The only reason to cut in without waiting is danger: something burning, oil catching fire,
 a pot boiling over, or they ask you to stop. Then speak immediately and keep it to a few words.
+
+WHEN THEY DO NOT KNOW WHAT TO MAKE:
+"I don't know", "whatever", "you decide", or just a tired sigh. Do not fire a list of
+dishes at them and do not ask everything at once. One short question at a time, three at
+most, and skip any they have already answered:
+1. Which meal is it — breakfast, lunch, dinner, or something small to pick at?
+2. How many of you are eating?
+3. What do you feel like — something light, something rich, something spicy, a soup?
+If you cannot tell how much cooking they have done, that is a fourth: have you cooked
+much before, or shall I keep it simple? Then call recommend_dishes with what they said
+and offer two of what comes back, one short line each, and let them choose. Once they
+pick, it is prep_list as usual.
 
 THE MOMENT THEY NAME A DISH — INGREDIENTS FIRST, ALWAYS:
 Nobody wants to be told to heat the pan and then find out the garlic ran out. So:
@@ -1868,6 +1996,34 @@ So each time it is your turn:
 Never call show_subtitle after you have spoken, and never twice in the same turn.
 When you are reading out a recipe step, pass the instruction_zh the tool gave you, word for word.
 
+THEY MAY GENUINELY NOT KNOW HOW TO COOK:
+Half the people using you have never been taught. Assume nothing, never make them feel
+slow, and explain the moment a word could be unfamiliar — in one short sentence, in
+ordinary words, without being asked twice. The things people actually get stuck on:
+- How hot: small flame = the flame stays inside the base of the pan. Medium = it just
+  reaches the edge. Big = it licks up the side. On induction, 3 / 6 / 9 out of 9.
+- Is the pan ready: flick a drop of water in. It should skitter and dance, not sit and
+  steam. For garlic and ginger: hot pan first, then the oil, then them — cold oil in a
+  hot pan is what keeps them from burning.
+- How much oil: enough to cover the base in a thin film, about a tablespoon. Frying
+  eggs or eggplant takes two or three times that.
+- Salt: in at the end for greens, or they weep water. Meat gets salted before it cooks.
+  Taste before the last pinch, always.
+- Is it cooked: chicken and pork — the juice runs clear, no pink at the bone. Fish —
+  it flakes when you push it. Root vegetables — a chopstick goes through with no
+  resistance. Greens — the colour turns bright, that is the moment, not later.
+- Knife: curl the fingertips of the holding hand under, knuckles against the blade.
+  Slow is fine. A blunt knife slips more than a sharp one.
+- "Roll cut" means turn the vegetable a quarter after each cut, so every piece has a
+  cut face. "Blanch" means boil it briefly and throw that water away.
+- Rescues: too salty — add water, a potato, or more of everything else. Burnt on the
+  bottom — tip the good part into another pan and do not scrape. Too watery — big
+  flame, no lid, and wait. Oil fire — lid on, gas off, never water.
+- Safety: never water on burning oil, turn pan handles inward, and a wet cloth under
+  the chopping board stops it sliding.
+Answer this kind of question in one or two sentences and then go straight back to where
+you were. Never say "as I said" and never make them feel they should have known.
+
 HOW A STEP GOES — THEY MAY NEVER HAVE COOKED BEFORE:
 1. Read the step out. One step, nothing from the step after it.
 2. Stop. Let them ask. "How big?", "how hot?", "how do I know when it is ready?" — answer
@@ -1932,8 +2088,8 @@ let agentSpeaking = false, gateTimer = null, headphones = false;
    cutting in: the rest of that reply is dropped, the gate opens, and it is
    their turn. The playback context is never closed here — only muted for that
    one reply — because re-creating it outside a tap is what silenced phones. */
-const BARGE_LEVEL = 0.22;      // echo with echoCancellation on sits far below this
-const BARGE_CHUNKS = 5;        // 5 x 50 ms of it — a word, not a clatter
+const BARGE_LEVEL = 0.17;      // echo with echoCancellation on sits far below this
+const BARGE_CHUNKS = 4;        // 4 x 50 ms of it — a word, not a clatter
 let bargeCount = 0, currentReply = null;
 
 function takeTurnBack(){
@@ -2083,19 +2239,20 @@ async function start(){
     ws.send(JSON.stringify({
       type:"session.update",
       session:{
-        system_prompt: systemPrompt(),
-        greeting: GREETING.en,
+        system_prompt: systemPrompt() + memoryBlock(),
+        greeting: convoLog.length ? "Right, I'm back with you." : GREETING.en,
         input:{
           format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE },
           keyterms: KEYTERMS,
-          // Let them finish. 3 s of silence after a sentence that sounds complete,
-          // 5 s when it sounds unfinished. Mandarin pauses mid-sentence more than
-          // English does, and taking the turn early is worse than answering late. vad 0.4 picks up a quieter voice
+          // Let them finish. 3.5 s of silence even when the sentence sounds complete,
+          // 5 s when it does not. The API will not take min_silence == max_silence, so
+          // this is as close to "always wait" as it allows. Mandarin pauses mid-sentence
+          // far more than English, and taking the turn early is worse than answering late. vad 0.4 picks up a quieter voice
           // across the kitchen. Transcription stays on the default (balanced):
           // measured 9/17 on the live API, max_accuracy heard the same words ~0.25 s later.
           // interrupt_response stays off: the microphone is shut while it talks
           // (build 11 audio), so it cannot cut itself off.
-          turn_detection:{ vad_threshold:0.4, min_silence:3000, max_silence:5000, interrupt_response: true }
+          turn_detection:{ vad_threshold:0.4, min_silence:3500, max_silence:5000, interrupt_response: true }
         },
         output:{ voice:"anna", format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } },
         tools: TOOL_SCHEMA
@@ -2117,7 +2274,7 @@ async function start(){
         setTurn("you");
         if(stage === "idle") setStage("picking");
         // The greeting is spoken before it can call a tool, so seed its subtitle.
-        setTimeout(() => subtitle(GREETING_ZH), 700);
+        setTimeout(() => subtitle(convoLog.length ? "我回來了，我們繼續。" : GREETING_ZH), 700);
         mintWakePhrase();   // record the wake-up line in the background
         try{
           await openMic();
@@ -2332,7 +2489,7 @@ function sendMicChunk(arrayBuffer){
    screenshot of the corner is enough to tell what happened. */
 function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 21 · 09-18 · " + txt;
+  if(el) el.textContent = "build 22 · 09-18 · " + txt;
 }
 
 function toBase64(arrayBuffer){
@@ -2433,6 +2590,19 @@ function stop(){
 }
 
 micBtn.addEventListener("click", () => running ? stop() : start());
+
+/* A clean slate, on purpose: one dish finished, next dish starting. Everything
+   else on the page keeps the memory, so this is the only way to clear it. */
+document.getElementById("newChat").addEventListener("click", () => {
+  if(running) stop();
+  convoLog = []; recipe = null; stepIdx = -1; matched = []; pendingRecipe = null;
+  partialLine = agentLine = null; agentBuf = ""; pendingZh = null;
+  mutedReply = null; guardReply = null; guardText = "";
+  clearTimer(); feedEl.innerHTML = "";
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+  setStage("idle");
+  say("SYSTEM", "New chat — nothing remembered from before.", "act", "新對話開始，前面的內容不會再被記得。");
+});
 window.addEventListener("beforeunload", () => { if(running) stop(); });
 
 loadState();
