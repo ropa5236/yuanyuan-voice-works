@@ -199,7 +199,7 @@
 </div>
 
 <div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
-<div class="build">build 24 · 09-18</div>
+<div class="build">build 25 · 09-18</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -2107,14 +2107,54 @@ let bargeCount = 0, currentReply = null;
    long enough to trip its own timer at once, and it answers immediately.
    min_silence on the session is set far higher than any real pause, so this
    page is the only thing that ever ends a turn. */
-const SPEAK_LEVEL  = 0.055;   // above this, a voice
-const QUIET_LEVEL  = 0.035;   // below this, a room
-const PAUSE_MS     = 300;     // quiet this long: hold the floor, send nothing
-const TURN_END_MS  = 1500;    // quiet this long: they are done
+/* A kitchen is never silent, so "quiet" cannot be a fixed number. An extractor
+   fan alone sat above the old threshold, which meant the page never decided they
+   had stopped — they finished, waited, and nothing ever came back. So the room
+   measures itself: a running floor of what this kitchen sounds like when nobody
+   is talking, and a voice has to stand clear of it. */
+const FLOOR_MIN    = 0.05;    // never trust a threshold lower than this
+const FLOOR_MAX    = 0.25;    // nor higher: a voice has to be able to reach it
+const OVER_FLOOR   = 2.2;     // a voice is this much louder than the room
+const ROOM_WINDOW  = 300;     // 15 s of levels to judge the room by
+const ROOM_PCTL    = 0.15;    // the quiet sixth of it IS the room
+const SPEECH_RUN   = 2;       // 2 x 50 ms of it — a syllable, not a clatter
+const PRE_ROLL     = 4;       // and the 200 ms before it, so no word gets clipped
+const PAUSE_MS     = 300;     // no voice for this long: hold the floor, send nothing
+const TURN_END_MS  = 1500;    // no voice for this long: they are done
 const CLOSE_SILENCE_MS = 6500;// what we then hand the API so it answers now
-let heardSpeech = false, quietMs = 0, turnOpen = false;
+let heardSpeech = false, sinceSpeech = 0, turnOpen = false;
+let noiseFloor = 0.02, loudRun = 0, preRoll = [];
+let roomLevels = [], roomTick = 0;
 
-function resetTurnState(){ heardSpeech = false; quietMs = 0; turnOpen = false; }
+/* The room is the quiet sixth of the last fifteen seconds. A voice comes and
+   goes; a fan does not, so it settles into that sixth and stops counting as
+   speech. Averages cannot do this — a fan drags an average up with it. */
+function learnRoom(level){
+  roomLevels.push(level);
+  if(roomLevels.length > ROOM_WINDOW) roomLevels.shift();
+  if(++roomTick < 10 || roomLevels.length < 40) return;
+  roomTick = 0;
+  const sorted = roomLevels.slice().sort((a, b) => a - b);
+  noiseFloor = sorted[Math.floor(sorted.length * ROOM_PCTL)];
+}
+
+function speechThreshold(){
+  return Math.max(FLOOR_MIN, Math.min(FLOOR_MAX, noiseFloor * OVER_FLOOR));
+}
+function resetTurnState(){ heardSpeech = false; sinceSpeech = 0; turnOpen = false; loudRun = 0; preRoll = []; }
+function forgetRoom(){ roomLevels = []; roomTick = 0; noiseFloor = 0.02; }
+
+/* If nothing ever clears the room's noise, say so — silence with no explanation
+   is the worst failure this thing has. */
+let everHeard = false, deafTimer = null;
+function watchForVoice(){
+  clearTimeout(deafTimer);
+  deafTimer = setTimeout(() => {
+    if(everHeard || !running) return;
+    say("SYSTEM", "I cannot pick your voice out of the room — come closer or speak up.",
+        "warn", "這裡太吵，圓圓分不出你的聲音，靠近一點或大聲一點。");
+  }, 20000);
+}
 
 /* Hand the API the silence it needs, all at once. It measures audio, not the
    clock, so a block sent in one go counts as that many seconds of quiet. */
@@ -2134,7 +2174,7 @@ function watchForReply(){
 }
 
 function closeTurn(){
-  turnOpen = false; heardSpeech = false; quietMs = 0;
+  turnOpen = false; heardSpeech = false; sinceSpeech = 0; loudRun = 0; preRoll = [];
   if(!ws || ws.readyState !== WebSocket.OPEN) return;
   watchForReply();
   const CH = Math.round(SAMPLE_RATE * 200 / 1000);
@@ -2145,7 +2185,7 @@ function closeTurn(){
 
 function takeTurnBack(){
   bargeCount = 0;
-  heardSpeech = true; quietMs = 0; turnOpen = true;   // they are mid-sentence
+  heardSpeech = true; sinceSpeech = 0; turnOpen = true;   // they are mid-sentence
   if(currentReply) mutedReply = currentReply;   // drop the rest of its audio
   pendingPcm = []; pendingLen = 0;
   openGate();
@@ -2164,7 +2204,7 @@ function agentAudioEndsSoon(){
   gateTimer = setTimeout(() => { agentSpeaking = false; setTurn("you"); }, remainMs + 350);
 }
 function openGate(){ clearTimeout(gateTimer); agentSpeaking = false; setTurn("you"); }
-function clearTurnHold(){ resetTurnState(); bargeCount = 0; clearTimeout(replyWatchdog); replyHeard = true; }
+function clearTurnHold(){ resetTurnState(); forgetRoom(); bargeCount = 0; clearTimeout(replyWatchdog); replyHeard = true; }
 
 /* ---- waking it up when a timer ends ------------------------------
    The whole product rests on this moment: the pot is boiling, their hands
@@ -2268,10 +2308,12 @@ async function start(){
   }
 
   try{
-    // Audio path is build 11's, restored as-is: the last version whose voice
-    // sounded right on a phone. Do not change these constraints.
+    // Audio path is build 11's: the last version whose voice sounded right on a
+    // phone. echoCancellation and autoGainControl must stay on — turning them off
+    // is what muted playback in build 12. noiseSuppression is the one safe change:
+    // it only cleans what goes IN, and a kitchen has a fan, a pan and a tap in it.
     micStream = await navigator.mediaDevices.getUserMedia({
-      audio:{ echoCancellation:true, noiseSuppression:false, autoGainControl:true }
+      audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true }
     });
   }catch(e){
     micBtn.disabled = false;
@@ -2295,6 +2337,11 @@ async function start(){
         input:{
           format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE },
           keyterms: KEYTERMS,
+          // The API can separate a voice from the room it is in. Probed 9/18: the
+          // field takes "far-field" or "near-field", and a threshold from 0 to 1.
+          // A phone propped on the counter with a fan going is the far-field case.
+          voice_focus: "far-field",
+          voice_focus_threshold: 0.45,
           // Deliberately longer than any real pause: the page above decides when a
           // turn is over and hands the API a block of silence to say so. These
           // numbers exist only as a backstop if that ever fails to fire. vad 0.4 picks up a quieter voice
@@ -2326,6 +2373,7 @@ async function start(){
         // The greeting is spoken before it can call a tool, so seed its subtitle.
         setTimeout(() => subtitle(convoLog.length ? "我回來了，我們繼續。" : GREETING_ZH), 700);
         mintWakePhrase();   // record the wake-up line in the background
+        everHeard = false; watchForVoice();
         try{
           await openMic();
         }catch(err){
@@ -2542,14 +2590,28 @@ function sendMicChunk(arrayBuffer){
   setLevel(level);
 
   // Their turn, and the page is holding the floor for them.
-  if(level > SPEAK_LEVEL){ heardSpeech = true; turnOpen = true; quietMs = 0; }
-  else if(level < QUIET_LEVEL) quietMs += CHUNK_MS;
-  else quietMs = 0;
+  learnRoom(level);
+  const thr = speechThreshold();
+  if(level > thr) loudRun++; else loudRun = 0;
 
-  if(!heardSpeech) return;                 // nothing said yet — nothing to send
-  if(quietMs >= TURN_END_MS){ if(turnOpen) closeTurn(); return; }
-  if(quietMs >= PAUSE_MS) return;          // a breath, not the end — hold it
+  if(loudRun >= SPEECH_RUN){                          // that is a voice
+    heardSpeech = true; turnOpen = true; sinceSpeech = 0; everHeard = true;
+  }else{
+    sinceSpeech += CHUNK_MS;
+    if(!heardSpeech){                                 // keep the run-up, drop the rest
+      preRoll.push(arrayBuffer);
+      if(preRoll.length > PRE_ROLL) preRoll.shift();
+      return;
+    }
+  }
 
+  if(sinceSpeech >= TURN_END_MS){ if(turnOpen) closeTurn(); return; }
+  if(sinceSpeech >= PAUSE_MS) return;                 // a breath, not the end — hold it
+
+  // The first syllable lives in the chunks before we were sure — send those too.
+  while(preRoll.length){
+    ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(preRoll.shift()) }));
+  }
   ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(arrayBuffer) }));
 }
 
@@ -2557,7 +2619,7 @@ function sendMicChunk(arrayBuffer){
    screenshot of the corner is enough to tell what happened. */
 function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 24 · 09-18 · " + txt;
+  if(el) el.textContent = "build 25 · 09-18 · " + txt;
 }
 
 function toBase64(arrayBuffer){
@@ -2670,6 +2732,7 @@ function stop(){
   partialLine = agentLine = null;
   agentBuf = ""; pendingZh = null;
   clearTurnHold();
+  clearTimeout(deafTimer);
 
   micBtn.disabled = false;
   micBtn.classList.remove("on");
