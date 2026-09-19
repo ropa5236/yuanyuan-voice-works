@@ -199,7 +199,7 @@
 </div>
 
 <div class="credit">© 2026 Yu-Chi Chang 張妤綺 · MIT</div>
-<div class="build">build 25 · 09-18</div>
+<div class="build">build 26 · 09-19</div>
 
 <script>
 /* ---------------------------------------------------------------
@@ -2120,8 +2120,8 @@ const ROOM_PCTL    = 0.15;    // the quiet sixth of it IS the room
 const SPEECH_RUN   = 2;       // 2 x 50 ms of it — a syllable, not a clatter
 const PRE_ROLL     = 4;       // and the 200 ms before it, so no word gets clipped
 const PAUSE_MS     = 300;     // no voice for this long: hold the floor, send nothing
-const TURN_END_MS  = 1500;    // no voice for this long: they are done
-const CLOSE_SILENCE_MS = 6500;// what we then hand the API so it answers now
+const TURN_END_MS  = 1000;    // no voice for this long: they are done
+const FLUSH_MS     = 2500;    // and we feed it the quiet in real time for this long
 let heardSpeech = false, sinceSpeech = 0, turnOpen = false;
 let noiseFloor = 0.02, loudRun = 0, preRoll = [];
 let roomLevels = [], roomTick = 0;
@@ -2168,19 +2168,23 @@ function watchForReply(){
   replyWatchdog = setTimeout(() => {
     if(replyHeard || !running) return;
     openGate();
+    if(!ws || ws.readyState !== WebSocket.OPEN){ dropped(); return; }
     say("SYSTEM", "No answer came back — say that again.", "warn",
         "圓圓沒有回應，再說一次就好。");
   }, 9000);
 }
 
+/* This used to hand the API six seconds of silence in one go, to end the turn
+   the instant they stopped. On a phone that was 400 KB dumped into the socket:
+   the upload jammed, everything said afterwards queued up behind it, nothing
+   came back, and the connection eventually died. The screen showed exactly
+   that — the sentence transcribed, then three "no answer", then dropped.
+   Now the quiet goes out at the speed it was recorded, like any other audio,
+   and the API's own timer ends the turn about a second later. */
 function closeTurn(){
-  turnOpen = false; heardSpeech = false; sinceSpeech = 0; loudRun = 0; preRoll = [];
-  if(!ws || ws.readyState !== WebSocket.OPEN) return;
+  if(!turnOpen) return;
+  turnOpen = false; loudRun = 0; preRoll = [];
   watchForReply();
-  const CH = Math.round(SAMPLE_RATE * 200 / 1000);
-  const quiet = new Int16Array(CH);
-  for(let i = 0; i < Math.ceil(CLOSE_SILENCE_MS / 200); i++)
-    ws.send(JSON.stringify({ type:"input.audio", audio: toBase64(quiet.buffer) }));
 }
 
 function takeTurnBack(){
@@ -2290,6 +2294,7 @@ function nudge(){
 
 async function start(){
   showError("");
+  if(!reconnecting) reconnects = 0;
   setStatus("Connecting… 連線中", "connecting");
   micBtn.disabled = true;
 
@@ -2342,14 +2347,14 @@ async function start(){
           // A phone propped on the counter with a fan going is the far-field case.
           voice_focus: "far-field",
           voice_focus_threshold: 0.45,
-          // Deliberately longer than any real pause: the page above decides when a
-          // turn is over and hands the API a block of silence to say so. These
-          // numbers exist only as a backstop if that ever fails to fire. vad 0.4 picks up a quieter voice
+          // The page holds their pauses back, so the only silence the API ever
+          // hears is real: a second of it means they have finished. Anything
+          // shorter than this it never sees, which is why it no longer cuts in. vad 0.4 picks up a quieter voice
           // across the kitchen. Transcription stays on the default (balanced):
           // measured 9/17 on the live API, max_accuracy heard the same words ~0.25 s later.
           // interrupt_response stays off: the microphone is shut while it talks
           // (build 11 audio), so it cannot cut itself off.
-          turn_detection:{ vad_threshold:0.4, min_silence:6000, max_silence:8000, interrupt_response: true }
+          turn_detection:{ vad_threshold:0.4, min_silence:1200, max_silence:2500, interrupt_response: true }
         },
         output:{ voice:"anna", format:{ encoding:"audio/pcm", sample_rate: SAMPLE_RATE } },
         tools: TOOL_SCHEMA
@@ -2458,8 +2463,39 @@ async function start(){
     }
   };
 
-  ws.onerror = () => showError("The voice connection dropped. Press start to try again.");
-  ws.onclose  = () => { if(running) stop(); };
+  ws.onerror = () => dropped();
+  ws.onclose  = () => dropped();
+}
+
+/* A connection can die on a phone: the signal goes, the screen sleeps, the
+   network hands over from wifi to 4G. Pressing the button again would work, but
+   nobody should have to notice. Reconnect, keep the conversation, carry on. */
+let reconnects = 0, reconnecting = false;
+
+function dropped(){
+  if(!running || reconnecting) return;
+  reconnecting = true;
+  try{ workletNode && workletNode.disconnect(); }catch(e){}
+  try{ sourceNode && sourceNode.disconnect(); }catch(e){}
+  try{ micStream && micStream.getTracks().forEach(t => t.stop()); }catch(e){}
+  try{ audioCtx && audioCtx.close(); }catch(e){}
+  workletNode = sourceNode = micStream = audioCtx = null;
+  ws = null; running = false;
+  stopPlayback();
+  clearTurnHold();
+
+  if(reconnects >= 3){
+    reconnecting = false;
+    setStatus("Not connected 未連線");
+    micBtn.disabled = false; micBtn.classList.remove("on");
+    micLabel.textContent = "Start talking 開始說話";
+    showError("The voice connection keeps dropping. Press start to try again.　連線一直斷，按開始說話重試。");
+    return;
+  }
+  reconnects++;
+  setStatus("Reconnecting… 重新連線中", "connecting");
+  say("SYSTEM", "Connection dropped — picking it back up.", "act", "連線斷了，正在接回來。");
+  setTimeout(() => { reconnecting = false; start(); }, 1200);
 }
 
 /* The microphone path. Two things have bitten us here, so both are handled.
@@ -2605,8 +2641,13 @@ function sendMicChunk(arrayBuffer){
     }
   }
 
-  if(sinceSpeech >= TURN_END_MS){ if(turnOpen) closeTurn(); return; }
-  if(sinceSpeech >= PAUSE_MS) return;                 // a breath, not the end — hold it
+  if(sinceSpeech >= TURN_END_MS){
+    closeTurn();                                      // they have stopped
+    // Feed the API the quiet in real time so its own timer ends the turn. After
+    // a few seconds it has long since answered, so stop sending and save the data.
+    if(sinceSpeech > TURN_END_MS + FLUSH_MS){ heardSpeech = false; return; }
+  }
+  else if(sinceSpeech >= PAUSE_MS) return;            // a breath, not the end — hold it
 
   // The first syllable lives in the chunks before we were sure — send those too.
   while(preRoll.length){
@@ -2619,7 +2660,7 @@ function sendMicChunk(arrayBuffer){
    screenshot of the corner is enough to tell what happened. */
 function stampAudio(txt){
   const el = document.querySelector(".build");
-  if(el) el.textContent = "build 25 · 09-18 · " + txt;
+  if(el) el.textContent = "build 26 · 09-19 · " + txt;
 }
 
 function toBase64(arrayBuffer){
